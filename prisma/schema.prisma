@@ -1,0 +1,251 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum UserStatus {
+  ONLINE  @map("online")
+  OFFLINE @map("offline")
+  AWAY    @map("away")
+  BUSY    @map("busy")
+
+  @@map("user_status")
+}
+
+enum WorkspaceMemberRole {
+  OWNER  @map("owner")
+  ADMIN  @map("admin")
+  MEMBER @map("member")
+
+  @@map("workspace_member_role")
+}
+
+enum ChannelType {
+  TEXT  @map("text")
+  VOICE @map("voice")
+
+  @@map("channel_type")
+}
+
+enum MessageType {
+  TEXT  @map("text")
+  IMAGE @map("image")
+  FILE  @map("file")
+  EMOJI @map("emoji")
+
+  @@map("message_type")
+}
+
+enum FriendStatus {
+  PENDING  @map("pending")
+  ACCEPTED @map("accepted")
+  REJECTED @map("rejected")
+  BLOCKED  @map("blocked")
+
+  @@map("friend_status")
+}
+
+enum Gender {
+  MALE   @map("male")
+  FEMALE @map("female")
+  OTHER  @map("other")
+
+  @@map("gender")
+}
+
+model User {
+  id          BigInt     @id @default(autoincrement()) @db.UnsignedBigInt // kiểu dữ liệu prisma - khóa chính - mặc định tự động tăng - kiểu trong db mysql
+  email       String     @unique @db.VarChar(255)
+  password    String     @db.VarChar(255)
+  username    String?    @unique @db.VarChar(100)
+  displayName String?    @map("display_name") @db.VarChar(100) // kiểu dữ liệu prisma - đổi tên column - kiểu trong db mysql
+  avatar      String?    @db.VarChar(500)
+  bio         String?    @db.Text
+  status      UserStatus @default(OFFLINE)
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  dateOfBirth String?    @db.VarChar(100)
+  phone       String?    @db.VarChar(100)
+  gender      Gender?    @default(MALE)
+  fullName    String?    @db.VarChar(100)
+
+  refreshTokens    RefreshToken[]
+  ownedWorkspaces  Workspace[]       @relation("WorkspaceOwner")
+  workspaceMembers WorkspaceMember[]
+  channelMembers   ChannelMember[]
+  messages         Message[]         @relation("MessageSender")
+  reactions        MessageReaction[]
+
+  sentFriendRequests     Friend[] @relation("FriendRequester")
+  receivedFriendRequests Friend[] @relation("FriendAddressee")
+
+  @@map("users") // Đổi tên bảng
+}
+
+model Friend {
+  id BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+
+  requesterId BigInt @map("requester_id") @db.UnsignedBigInt
+  addresseeId BigInt @map("addressee_id") @db.UnsignedBigInt
+
+  requester User @relation("FriendRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee User @relation("FriendAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  status FriendStatus @default(PENDING)
+
+  createdAt  DateTime  @default(now())
+  acceptedAt DateTime?
+
+  @@unique([requesterId, addresseeId])
+  @@map("friends")
+}
+
+model RefreshToken {
+  id        BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  userId    BigInt   @map("user_id") @db.UnsignedBigInt
+  token     String   @unique @db.VarChar(255)
+  iat       Int      @map("iat")
+  exp       Int      @map("exp")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade) // Thiết lập quan hệ // ràng buộc khóa ngoại với khóa chính // onDelete: Cascade: khi xóa record cha thì record con cũng bị xóa
+
+  @@index([userId]) // Tạo index
+  @@map("refresh_tokens") // Đổi tên bảng 
+}
+
+model Workspace {
+  id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  name        String?  @db.VarChar(255)
+  description String?  @db.Text
+  avatar      String?  @db.VarChar(500)
+  ownerId     BigInt?  @map("owner_id") @db.UnsignedBigInt
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  owner    User?             @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  members  WorkspaceMember[]
+  channels Channel[]
+
+  @@index([ownerId])
+  @@map("workspaces")
+}
+
+model WorkspaceMember {
+  workspaceId BigInt              @map("workspace_id") @db.UnsignedBigInt
+  userId      BigInt              @map("user_id") @db.UnsignedBigInt
+  role        WorkspaceMemberRole @default(MEMBER)
+  joinedAt    DateTime?           @map("joined_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([workspaceId, userId])
+  @@index([userId])
+  @@map("workspace_members")
+}
+
+model Channel {
+  id          BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
+  workspaceId BigInt       @map("workspace_id") @db.UnsignedBigInt
+  name        String?      @db.VarChar(100)
+  description String?      @db.Text
+  type        ChannelType?
+  isPrivate   Boolean      @default(false) @map("is_private")
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  workspace Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  members   ChannelMember[]
+  messages  Message[]
+
+  @@index([workspaceId])
+  @@map("channels")
+}
+
+model ChannelMember {
+  channelId BigInt    @map("channel_id") @db.UnsignedBigInt
+  userId    BigInt    @map("user_id") @db.UnsignedBigInt
+  joinedAt  DateTime? @map("joined_at")
+
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([channelId, userId])
+  @@index([userId])
+  @@map("channel_members")
+}
+
+model Message {
+  id          BigInt      @id @default(autoincrement()) @db.UnsignedBigInt
+  channelId   BigInt      @map("channel_id") @db.UnsignedBigInt
+  senderId    BigInt      @map("sender_id") @db.UnsignedBigInt
+  content     String?     @db.Text
+  messageType MessageType @map("message_type")
+  replyToId   BigInt?     @map("reply_to") @db.UnsignedBigInt
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  deletedAt   DateTime?   @map("deleted_at")
+
+  channel     Channel           @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  sender      User              @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  replyTo     Message?          @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies     Message[]         @relation("MessageReplies")
+  attachments Attachment[]
+  reactions   MessageReaction[]
+
+  @@index([channelId])
+  @@index([senderId])
+  @@index([replyToId])
+  @@map("messages")
+}
+
+model Attachment {
+  id        BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  messageId BigInt   @map("message_id") @db.UnsignedBigInt
+  fileName  String   @map("file_name") @db.VarChar(255)
+  fileUrl   String   @map("file_url") @db.VarChar(1000)
+  mimeType  String   @map("mime_type") @db.VarChar(100)
+  fileSize  BigInt   @map("file_size") @db.UnsignedBigInt
+  createdAt DateTime @default(now()) @map("created_at")
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@map("attachments")
+}
+
+model Emoji {
+  id        BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  shortcode String  @db.VarChar(100)
+  unicode   String  @db.VarChar(20)
+  imageUrl  String? @map("image_url") @db.VarChar(500)
+
+  reactions MessageReaction[]
+
+  @@map("emojis")
+}
+
+model MessageReaction {
+  messageId BigInt   @map("message_id") @db.UnsignedBigInt
+  userId    BigInt   @map("user_id") @db.UnsignedBigInt
+  emojiId   BigInt   @map("emoji_id") @db.UnsignedBigInt
+  createdAt DateTime @default(now()) @map("created_at")
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emoji   Emoji   @relation(fields: [emojiId], references: [id], onDelete: Cascade)
+
+  @@id([messageId, userId, emojiId])
+  @@index([userId])
+  @@index([emojiId])
+  @@map("message_reactions")
+}

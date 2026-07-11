@@ -1,0 +1,2005 @@
+
+> server@1.0.0 dev
+> npx nodemon
+
+[33m[nodemon] 3.1.14[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): src\**\* .env[39m
+[33m[nodemon] watching extensions: ts,js[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+Server is running on port 5000
+✅ Connected to MySQL
+Connected to database
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`email` = ? OR `users`.`username` = ?) LIMIT ? OFFSET ?
+ℹ️  Admin user already exists
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+Server is running on port 5000
+✅ Connected to MySQL
+Connected to database
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`email` = ? OR `users`.`username` = ?) LIMIT ? OFFSET ?
+ℹ️  Admin user already exists
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+Server is running on port 5000
+✅ Connected to MySQL
+Connected to database
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`email` = ? OR `users`.`username` = ?) LIMIT ? OFFSET ?
+ℹ️  Admin user already exists
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+node:internal/modules/run_main:122
+    triggerUncaughtException(
+    ^
+
+Error: Transform failed with 1 error:
+e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\services\r2.services.ts:51:32: ERROR: Expected identifier but found "``"
+    at failureErrorWithLog (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:1748:15)
+    at e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:1017:50
+    at responseCallbacks.<computed> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:884:9)
+    at handleIncomingPacket (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:939:12)
+    at Socket.readFromStdout (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:862:7)
+    at Socket.emit (node:events:524:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23) {
+  name: 'TransformError'
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+Server is running on port 5000
+✅ Connected to MySQL
+Connected to database
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`email` = ? OR `users`.`username` = ?) LIMIT ? OFFSET ?
+ℹ️  Admin user already exists
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+Server is running on port 5000
+✅ Connected to MySQL
+Connected to database
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`email` = ? OR `users`.`username` = ?) LIMIT ? OFFSET ?
+ℹ️  Admin user already exists
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+Server is running on port 5000
+✅ Connected to MySQL
+Connected to database
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`email` = ? OR `users`.`username` = ?) LIMIT ? OFFSET ?
+ℹ️  Admin user already exists
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+Server is running on port 5000
+✅ Connected to MySQL
+Connected to database
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`email` = ? OR `users`.`username` = ?) LIMIT ? OFFSET ?
+ℹ️  Admin user already exists
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+node:internal/modules/run_main:122
+    triggerUncaughtException(
+    ^
+
+Error: Transform failed with 1 error:
+e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\controllers\user.controller.ts:17:2: ERROR: Expected identifier but found "if"
+    at failureErrorWithLog (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:1748:15)
+    at e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:1017:50
+    at responseCallbacks.<computed> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:884:9)
+    at handleIncomingPacket (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:939:12)
+    at Socket.readFromStdout (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:862:7)
+    at Socket.emit (node:events:524:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23) {
+  name: 'TransformError'
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+Server is running on port 5000
+✅ Connected to MySQL
+Connected to database
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`email` = ? OR `users`.`username` = ?) LIMIT ? OFFSET ?
+ℹ️  Admin user already exists
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`username` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`username` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`username` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `users` (`email`,`password`,`username`,`display_name`,`status`,`created_at`,`updated_at`) VALUES (?,?,?,?,?,?,?)
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE `users`.`id` = ? LIMIT ? OFFSET ?
+prisma:query -- Implicit "COMMIT" query via underlying driver
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`username` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`username` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`username` = ? AND 1=1) LIMIT ? OFFSET ?
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+[32m[nodemon] restarting due to changes...[39m
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+Server is running on port 5000
+✅ Connected to MySQL
+Connected to database
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`email` = ? OR `users`.`username` = ?) LIMIT ? OFFSET ?
+ℹ️  Admin user already exists
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+Server is running on port 5000
+✅ Connected to MySQL
+Connected to database
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`email` = ? OR `users`.`username` = ?) LIMIT ? OFFSET ?
+ℹ️  Admin user already exists
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+Server is running on port 5000
+✅ Connected to MySQL
+Connected to database
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`email` = ? OR `users`.`username` = ?) LIMIT ? OFFSET ?
+ℹ️  Admin user already exists
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+node:internal/modules/run_main:122
+    triggerUncaughtException(
+    ^
+
+Error: Transform failed with 1 error:
+e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\models\schemas\user.schemas.ts:13:2: ERROR: Expected "}" but found "avatar"
+    at failureErrorWithLog (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:1748:15)
+    at e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:1017:50
+    at responseCallbacks.<computed> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:884:9)
+    at handleIncomingPacket (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:939:12)
+    at Socket.readFromStdout (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:862:7)
+    at Socket.emit (node:events:524:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23) {
+  name: 'TransformError'
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+Server is running on port 5000
+✅ Connected to MySQL
+Connected to database
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`email` = ? OR `users`.`username` = ?) LIMIT ? OFFSET ?
+ℹ️  Admin user already exists
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+node:internal/modules/run_main:122
+    triggerUncaughtException(
+    ^
+
+Error: Transform failed with 1 error:
+e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\models\schemas\user.schemas.ts:14:2: ERROR: Expected "}" but found "fullName"
+    at failureErrorWithLog (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:1748:15)
+    at e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:1017:50
+    at responseCallbacks.<computed> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:884:9)
+    at handleIncomingPacket (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:939:12)
+    at Socket.readFromStdout (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:862:7)
+    at Socket.emit (node:events:524:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23) {
+  name: 'TransformError'
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+Server is running on port 5000
+✅ Connected to MySQL
+Connected to database
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`email` = ? OR `users`.`username` = ?) LIMIT ? OFFSET ?
+ℹ️  Admin user already exists
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+Server is running on port 5000
+✅ Connected to MySQL
+Connected to database
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`email` = ? OR `users`.`username` = ?) LIMIT ? OFFSET ?
+ℹ️  Admin user already exists
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+[32m[nodemon] restarting due to changes...[39m
+node:internal/modules/run_main:122
+    triggerUncaughtException(
+    ^
+
+Error: Transform failed with 1 error:
+e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\services\user.services.ts:246:8: ERROR: Expected "}" but found "avatar"
+    at failureErrorWithLog (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:1748:15)
+    at e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:1017:50
+    at responseCallbacks.<computed> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:884:9)
+    at handleIncomingPacket (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:939:12)
+    at Socket.readFromStdout (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:862:7)
+    at Socket.emit (node:events:524:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23) {
+  name: 'TransformError'
+}
+
+Node.js v22.13.1
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+Server is running on port 5000
+✅ Connected to MySQL
+Connected to database
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at` FROM `users` WHERE (`users`.`email` = ? OR `users`.`username` = ?) LIMIT ? OFFSET ?
+ℹ️  Admin user already exists
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+node:internal/modules/run_main:122
+    triggerUncaughtException(
+    ^
+
+Error: Transform failed with 1 error:
+e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\services\user.services.ts:180:8: ERROR: Expected "}" but found "fullName"
+    at failureErrorWithLog (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:1748:15)
+    at e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:1017:50
+    at responseCallbacks.<computed> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:884:9)
+    at handleIncomingPacket (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:939:12)
+    at Socket.readFromStdout (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:862:7)
+    at Socket.emit (node:events:524:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23) {
+  name: 'TransformError'
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+node:internal/modules/run_main:122
+    triggerUncaughtException(
+    ^
+
+Error: Transform failed with 1 error:
+e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\services\user.services.ts:180:8: ERROR: Expected "}" but found "fullName"
+    at failureErrorWithLog (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:1748:15)
+    at e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:1017:50
+    at responseCallbacks.<computed> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:884:9)
+    at handleIncomingPacket (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:939:12)
+    at Socket.readFromStdout (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\esbuild\lib\main.js:862:7)
+    at Socket.emit (node:events:524:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23) {
+  name: 'TransformError'
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+Server is running on port 5000
+✅ Connected to MySQL
+Connected to database
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at`, `users`.`dateOfBirth`, `users`.`phone`, `users`.`gender`, `users`.`fullName` FROM `users` WHERE (`users`.`email` = ? OR `users`.`username` = ?) LIMIT ? OFFSET ?
+ℹ️  Admin user already exists
+prisma:query SELECT `users`.`id` FROM `users` WHERE (`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query UPDATE `users` SET `bio` = ?, `phone` = ?, `dateOfBirth` = ?, `fullName` = ?, `gender` = ?, `updated_at` = ? WHERE (`users`.`id` IN (?) AND (`users`.`id` = ? AND 1=1))
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`username`, `users`.`display_name`, `users`.`fullName`, `users`.`avatar`, `users`.`bio`, `users`.`phone`, `users`.`dateOfBirth`, `users`.`gender`, `users`.`status`, `users`.`created_at` FROM `users` WHERE `users`.`id` = ? LIMIT ? OFFSET ?
+prisma:query -- Implicit "COMMIT" query via underlying driver
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`fullName`, `users`.`gender`, `users`.`phone`, `users`.`dateOfBirth` FROM `users` WHERE (`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`fullName`, `users`.`gender`, `users`.`phone`, `users`.`dateOfBirth` FROM `users` WHERE (`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id` FROM `users` WHERE (`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query UPDATE `users` SET `bio` = ?, `phone` = ?, `dateOfBirth` = ?, `fullName` = ?, `gender` = ?, `updated_at` = ? WHERE (`users`.`id` IN (?) AND (`users`.`id` = ? AND 1=1))
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`username`, `users`.`display_name`, `users`.`fullName`, `users`.`avatar`, `users`.`bio`, `users`.`phone`, `users`.`dateOfBirth`, `users`.`gender`, `users`.`status`, `users`.`created_at` FROM `users` WHERE `users`.`id` = ? LIMIT ? OFFSET ?
+prisma:query -- Implicit "COMMIT" query via underlying driver
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`fullName`, `users`.`gender`, `users`.`phone`, `users`.`dateOfBirth` FROM `users` WHERE (`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id` FROM `users` WHERE (`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query UPDATE `users` SET `bio` = ?, `phone` = ?, `dateOfBirth` = ?, `fullName` = ?, `gender` = ?, `updated_at` = ? WHERE (`users`.`id` IN (?) AND (`users`.`id` = ? AND 1=1))
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`username`, `users`.`display_name`, `users`.`fullName`, `users`.`avatar`, `users`.`bio`, `users`.`phone`, `users`.`dateOfBirth`, `users`.`gender`, `users`.`status`, `users`.`created_at` FROM `users` WHERE `users`.`id` = ? LIMIT ? OFFSET ?
+prisma:query -- Implicit "COMMIT" query via underlying driver
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`fullName`, `users`.`gender`, `users`.`phone`, `users`.`dateOfBirth` FROM `users` WHERE (`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`fullName`, `users`.`gender`, `users`.`phone`, `users`.`dateOfBirth` FROM `users` WHERE (`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`fullName`, `users`.`gender`, `users`.`phone`, `users`.`dateOfBirth` FROM `users` WHERE (`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`fullName`, `users`.`gender`, `users`.`phone`, `users`.`dateOfBirth` FROM `users` WHERE (`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`fullName`, `users`.`gender`, `users`.`phone`, `users`.`dateOfBirth` FROM `users` WHERE (`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`fullName`, `users`.`gender`, `users`.`phone`, `users`.`dateOfBirth` FROM `users` WHERE (`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`fullName`, `users`.`gender`, `users`.`phone`, `users`.`dateOfBirth` FROM `users` WHERE (`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`fullName`, `users`.`gender`, `users`.`phone`, `users`.`dateOfBirth` FROM `users` WHERE (`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`fullName`, `users`.`gender`, `users`.`phone`, `users`.`dateOfBirth` FROM `users` WHERE (`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`fullName`, `users`.`gender`, `users`.`phone`, `users`.`dateOfBirth` FROM `users` WHERE (`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`fullName`, `users`.`gender`, `users`.`phone`, `users`.`dateOfBirth` FROM `users` WHERE (`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id` FROM `users` WHERE (`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query UPDATE `users` SET `bio` = ?, `phone` = ?, `fullName` = ?, `gender` = ?, `updated_at` = ? WHERE (`users`.`id` IN (?) AND (`users`.`id` = ? AND 1=1))
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`username`, `users`.`display_name`, `users`.`fullName`, `users`.`avatar`, `users`.`bio`, `users`.`phone`, `users`.`dateOfBirth`, `users`.`gender`, `users`.`status`, `users`.`created_at` FROM `users` WHERE `users`.`id` = ? LIMIT ? OFFSET ?
+prisma:query -- Implicit "COMMIT" query via underlying driver
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`fullName`, `users`.`gender`, `users`.`phone`, `users`.`dateOfBirth` FROM `users` WHERE (`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`fullName`, `users`.`gender`, `users`.`phone`, `users`.`dateOfBirth` FROM `users` WHERE (`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`fullName`, `users`.`gender`, `users`.`phone`, `users`.`dateOfBirth` FROM `users` WHERE (`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`fullName`, `users`.`gender`, `users`.`phone`, `users`.`dateOfBirth` FROM `users` WHERE (`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id` FROM `users` WHERE (`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query UPDATE `users` SET `bio` = ?, `phone` = ?, `dateOfBirth` = ?, `fullName` = ?, `gender` = ?, `updated_at` = ? WHERE (`users`.`id` IN (?) AND (`users`.`id` = ? AND 1=1))
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`username`, `users`.`display_name`, `users`.`fullName`, `users`.`avatar`, `users`.`bio`, `users`.`phone`, `users`.`dateOfBirth`, `users`.`gender`, `users`.`status`, `users`.`created_at` FROM `users` WHERE `users`.`id` = ? LIMIT ? OFFSET ?
+prisma:query -- Implicit "COMMIT" query via underlying driver
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`fullName`, `users`.`gender`, `users`.`phone`, `users`.`dateOfBirth` FROM `users` WHERE (`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`fullName`, `users`.`gender`, `users`.`phone`, `users`.`dateOfBirth` FROM `users` WHERE (`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`fullName`, `users`.`gender`, `users`.`phone`, `users`.`dateOfBirth` FROM `users` WHERE (`users`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+Server is running on port 5000
+✅ Connected to MySQL
+Connected to database
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at`, `users`.`dateOfBirth`, `users`.`phone`, `users`.`gender`, `users`.`fullName` FROM `users` WHERE (`users`.`email` = ? OR `users`.`username` = ?) LIMIT ? OFFSET ?
+ℹ️  Admin user already exists
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+Server is running on port 5000
+✅ Connected to MySQL
+Connected to database
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at`, `users`.`dateOfBirth`, `users`.`phone`, `users`.`gender`, `users`.`fullName` FROM `users` WHERE (`users`.`email` = ? OR `users`.`username` = ?) LIMIT ? OFFSET ?
+ℹ️  Admin user already exists
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+Server is running on port 5000
+✅ Connected to MySQL
+Connected to database
+prisma:query SELECT `users`.`id`, `users`.`email`, `users`.`password`, `users`.`username`, `users`.`display_name`, `users`.`avatar`, `users`.`bio`, `users`.`status`, `users`.`created_at`, `users`.`updated_at`, `users`.`dateOfBirth`, `users`.`phone`, `users`.`gender`, `users`.`fullName` FROM `users` WHERE (`users`.`email` = ? OR `users`.`username` = ?) LIMIT ? OFFSET ?
+ℹ️  Admin user already exists
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx ./src/index.ts`[39m
+.env
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5000
+    at Server.setupListenHandle [as _listen2] (node:net:1937:16)
+    at listenInCluster (node:net:1994:12)
+    at Server.listen (node:net:2099:7)
+    at databaseServices (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:54:12)
+    at Object.<anonymous> (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\src\index.ts:56:2)
+    at Module._compile (node:internal/modules/cjs/loader:1562:14)
+    at Object.transformer (e:\VS_CODE\Project\Project-fullStack\WorkspaceX\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1313:32)
+    at Function._load (node:internal/modules/cjs/loader:1123:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1973:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000
+}
+
+Node.js v22.13.1
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
