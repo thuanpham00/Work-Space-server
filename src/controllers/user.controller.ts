@@ -2,12 +2,19 @@ import { Request, Response } from 'express'
 import fs from 'fs'
 import userService from '../services/user.services'
 import r2Service from '~/services/r2.services'
-import { UpdateUserBody, UpdateStatusBody, RegisterBody, LoginBody, ChangePasswordBody } from '../models/schemas/user.schemas'
-import { AuthenticatedRequest } from '../models/requests/user.requests'
+import {
+  UpdateUserBody,
+  UpdateStatusBody,
+  RegisterBody,
+  LoginBody,
+  ChangePasswordBody
+} from '../models/schemas/user.schemas'
+import { AuthenticatedRequest, GetAllUsersQueryParams } from '../models/requests/user.requests'
 import { ApiResponse, AuthResponse, TokenPayload, UserResponse } from '~/models/responses/user.responses'
 import { ErrorWithStatus } from '~/constants/errors'
 import httpStatus from '~/constants/httpStatus'
 import { getUploadedFile } from '~/middlewares/upload.middlewares'
+import { ParamsDictionary } from 'express-serve-static-core'
 
 export const registerController = async (req: Request, res: Response) => {
   const body = req.body as RegisterBody
@@ -125,12 +132,16 @@ export const getMeController = async (req: AuthenticatedRequest, res: Response) 
   res.json(response)
 }
 
-export const getAllUsers = async (req: Request, res: Response) => {
-  const users = await userService.getAllUsers()
+export const getAllUsers = async (req: Request<ParamsDictionary, {}, {}, GetAllUsersQueryParams>, res: Response) => {
+  const { page, limit, search } = req.query
+  const users = await userService.getAllUsers(page as string, limit as string, search as string)
 
-  const response: ApiResponse<UserResponse[]> = {
+  const response: ApiResponse<{ users: UserResponse[]; total: number }> = {
     message: 'Lấy danh sách users thành công',
-    data: users as unknown as UserResponse[]
+    data: {
+      users: users as unknown as UserResponse[],
+      total: users.length
+    }
   }
 
   res.json(response)
@@ -192,7 +203,7 @@ export const updateStatus = async (req: AuthenticatedRequest, res: Response) => 
 }
 
 export const uploadImageController = async (req: AuthenticatedRequest, res: Response) => {
-  const imageFile = getUploadedFile(req, 'image')
+  const imageFile = getUploadedFile(req, 'avatar')
 
   const buffer = fs.readFileSync(imageFile.filepath)
   const userId = (req.decode_authorization as TokenPayload).user_id

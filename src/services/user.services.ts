@@ -146,8 +146,18 @@ class UserService {
   }
 
   // Lấy tất cả users
-  async getAllUsers() {
+  async getAllUsers(page: string, limit: string, search: string) {
+    const pageNumber = Number(page) || 1
+    const limitNumber = Number(limit) || 10
+    const skip = (pageNumber - 1) * limitNumber
+    const where: any = {}
+    if (search) {
+      where.OR = [{ username: { contains: search } }, { displayName: { contains: search } }]
+    }
     const users = await databaseServices.prisma.user.findMany({
+      where,
+      skip,
+      take: limitNumber,
       select: {
         id: true,
         email: true,
@@ -155,7 +165,9 @@ class UserService {
         displayName: true,
         avatar: true,
         status: true,
-        createdAt: true
+        createdAt: true,
+        fullName: true,
+        phone: true,
       }
     })
     return users.map((user) => ({
@@ -180,7 +192,7 @@ class UserService {
         fullName: true,
         gender: true,
         phone: true,
-        dateOfBirth: true,
+        dateOfBirth: true
       }
     })
     if (user) {

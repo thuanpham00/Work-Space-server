@@ -33,7 +33,7 @@ router.post('/logout', accessTokenValidator, refreshTokenValidator, asyncHandler
 
 router.post('/refresh-token', refreshTokenValidator, asyncHandler(refreshTokenController))
 
-router.get('/', asyncHandler(getAllUsers))
+router.get('/', accessTokenValidator, asyncHandler(getAllUsers))
 
 router.get('/me', accessTokenValidator, asyncHandler(getMeController))
 
@@ -41,7 +41,12 @@ router.get('/:userId', asyncHandler(getUserById))
 
 router.patch('/me', accessTokenValidator, validate(updateUserSchema), asyncHandler(updateUser))
 
-router.post('/change-password', accessTokenValidator, validate(changePasswordSchema), asyncHandler(changePasswordController))
+router.post(
+  '/change-password',
+  accessTokenValidator,
+  validate(changePasswordSchema),
+  asyncHandler(changePasswordController)
+)
 
 router.post('/upload', accessTokenValidator, uploadMiddleware(), asyncHandler(uploadImageController))
 
