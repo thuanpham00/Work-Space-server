@@ -9,20 +9,22 @@ export const registerSchema = z.object({
 
 // Schema cho việc cập nhật user
 export const updateUserSchema = z.object({
-  avatar: z.string().max(500, 'Avatar không được quá 500 ký tự').optional().or(z.literal('')),
-  gender: z.enum(['MALE', 'FEMALE', 'OTHER']).optional(),
-  fullName: z.string().max(100, 'Full name không được quá 100 ký tự').optional(),
-  bio: z.string().max(500, 'Bio không được quá 500 ký tự').optional(),
+  avatar: z.string().max(500, 'Avatar không được quá 500 ký tự').optional().or(z.literal('')).nullable(),
+  gender: z.enum(['MALE', 'FEMALE', 'OTHER']).optional().nullable(),
+  fullName: z.string().max(100, 'Full name không được quá 100 ký tự').optional().nullable(),
+  bio: z.string().max(500, 'Bio không được quá 500 ký tự').optional().nullable(),
   phone: z
     .string()
     .regex(/^[0-9+\-\s()]{6,20}$/, 'Số điện thoại không hợp lệ')
     .optional()
-    .or(z.literal('')),
+    .or(z.literal(''))
+    .nullable(),
   dateOfBirth: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày sinh phải có định dạng YYYY-MM-DD')
     .refine((v) => !isNaN(Date.parse(v)), 'Ngày sinh không hợp lệ')
     .optional()
+    .nullable()
 })
 
 // Schema cho việc đăng nhập
@@ -57,6 +59,10 @@ export const updateStatusSchema = z.object({
   status: z.enum(['ONLINE', 'OFFLINE', 'AWAY', 'BUSY'])
 })
 
+export const addFriendSchema = z.object({
+  friendId: z.string().min(1, 'ID của bạn bè không được để trống')
+})
+
 // Type inference từ schema
 export type RegisterBody = z.infer<typeof registerSchema>
 export type UpdateUserBody = z.infer<typeof updateUserSchema>
@@ -64,3 +70,4 @@ export type LoginBody = z.infer<typeof loginSchema>
 export type ChangePasswordBody = z.infer<typeof changePasswordSchema>
 export type SearchUserQuery = z.infer<typeof searchUserSchema>
 export type UpdateStatusBody = z.infer<typeof updateStatusSchema>
+export type AddFriendBody = z.infer<typeof addFriendSchema>

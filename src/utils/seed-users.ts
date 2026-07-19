@@ -19,9 +19,7 @@ function sha256(content: string) {
 function hashPassword(password: string) {
   const salt = process.env.SECRET_KEY_HASH_PASSWORD
   if (!salt) {
-    throw new Error(
-      'SECRET_KEY_HASH_PASSWORD is not set - hãy thêm dòng SECRET_KEY_HASH_PASSWORD="..." vào .env'
-    )
+    throw new Error('SECRET_KEY_HASH_PASSWORD is not set - hãy thêm dòng SECRET_KEY_HASH_PASSWORD="..." vào .env')
   }
   return sha256(password + salt)
 }
@@ -46,6 +44,28 @@ function createMariaDbAdapter() {
 // Enum Gender trong Prisma: MALE | FEMALE | OTHER
 const VALID_GENDERS = new Set(['MALE', 'FEMALE', 'OTHER'])
 
+type SeedUserInput = {
+  email: string
+  password: string
+  username?: string | null
+  fullName?: string | null
+  displayName?: string | null
+  phone?: string | null
+  dateOfBirth?: string | null
+  gender?: string | null
+}
+
+type SeedUserData = {
+  email: string
+  password: string
+  username: string | null
+  fullName: string | null
+  displayName: string | null
+  phone: string | null
+  dateOfBirth: string | null
+  gender: 'MALE' | 'FEMALE' | 'OTHER' | null
+}
+
 async function main() {
   const prisma = new PrismaClient({ adapter: createMariaDbAdapter() })
 
@@ -54,7 +74,9 @@ async function main() {
   console.log('   - DATABASE_URL         :', process.env.DATABASE_URL ? '✅ có' : '❌ thiếu')
   console.log(
     '   - SECRET_KEY_HASH_PASSWORD:',
-    process.env.SECRET_KEY_HASH_PASSWORD ? '✅ có (length=' + process.env.SECRET_KEY_HASH_PASSWORD.length + ')' : '❌ thiếu'
+    process.env.SECRET_KEY_HASH_PASSWORD
+      ? '✅ có (length=' + process.env.SECRET_KEY_HASH_PASSWORD.length + ')'
+      : '❌ thiếu'
   )
   console.log('   - Số user sẽ seed      :', usersData.length)
 
@@ -65,17 +87,18 @@ async function main() {
 
   for (const [index, u] of usersData.entries()) {
     try {
-      const gender = u.gender && VALID_GENDERS.has(u.gender) ? u.gender : null
+      const userInput = u as SeedUserInput
+      const gender = userInput.gender && VALID_GENDERS.has(userInput.gender) ? userInput.gender : null
 
-      const data = {
-        email: String(u.email).trim().toLowerCase(),
-        password: hashPassword(u.password),
-        username: u.username ?? null,
-        fullName: u.fullName ?? null,
-        displayName: u.displayName ?? u.username ?? null,
-        phone: u.phone ?? null,
-        dateOfBirth: u.dateOfBirth ?? null,
-        gender: gender as any
+      const data: SeedUserData = {
+        email: String(userInput.email).trim().toLowerCase(),
+        password: hashPassword(userInput.password),
+        username: userInput.username ?? null,
+        fullName: userInput.fullName ?? null,
+        displayName: userInput.displayName ?? userInput.username ?? null,
+        phone: userInput.phone ?? null,
+        dateOfBirth: userInput.dateOfBirth ?? null,
+        gender: (gender as 'MALE' | 'FEMALE' | 'OTHER' | null) ?? null
       }
 
       const existsByEmail = await prisma.user.findUnique({ where: { email: data.email } })
@@ -96,11 +119,46 @@ async function main() {
         }
       }
 
-      await prisma.user.create({ data })
+      const createdUser = await prisma.user.create({ data })
+
+      await prisma.workspace.create({
+        data: {
+          name: `Workspace của ${data.username ?? data.email}`,
+          description: 'Workspace mặc định được tạo khi seed user',
+          ownerId: createdUser.id,
+          members: {
+            create: [{ userId: createdUser.id, role: 'OWNER', joinedAt: new Date() }]
+          },
+          channels: {
+            create: [
+              {
+                name: 'general',
+                description: 'Kênh chung',
+                type: 'TEXT',
+                isPrivate: false,
+                members: {
+                  create: [{ userId: createdUser.id, joinedAt: new Date() }]
+                }
+              },
+              {
+                name: 'voice',
+                description: 'Kênh thoại',
+                type: 'VOICE',
+                isPrivate: false,
+                members: {
+                  create: [{ userId: createdUser.id, joinedAt: new Date() }]
+                }
+              }
+            ]
+          }
+        }
+      })
+
       console.log(`   ✅ [${index + 1}] Đã tạo: ${data.email}`)
       created++
-    } catch (err: any) {
-      console.error(`   ❌ [${index + 1}] Lỗi khi tạo user ${u.email}:`, err?.message ?? err)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
+      console.error(`   ❌ [${index + 1}] Lỗi khi tạo user ${u.email}:`, message)
     }
   }
 

@@ -1,10 +1,11 @@
 import { signToken, verifyToken } from '~/utils/jwt'
 import databaseServices from './database.services'
-import { TokenType } from '~/constants/enum'
+import { ChannelType, FriendStatus, TokenType, WorkspaceMemberRole } from '~/constants/enum'
 import { envConfig } from '~/utils/config'
 import { hashPassword } from '~/utils/scripto'
 import { ErrorWithStatus } from '~/constants/errors'
 import httpStatus from '~/constants/httpStatus'
+import { UpdateUserBody } from '~/models/schemas/user.schemas'
 
 class UserService {
   private signAccessToken({ user_id }: { user_id: string }) {
@@ -60,6 +61,9 @@ class UserService {
         displayName: payload.username
       }
     })
+
+    // tạo workspace mặc định cho user mới đăng ký
+    await this.createWorkspaceForUser(newUser.id)
 
     return {
       user: {
@@ -145,7 +149,61 @@ class UserService {
     }
   }
 
-  // Lấy tất cả users
+  async createWorkspaceForUser(userId: bigint) {
+    // khi user đăng ký tài khoản khởi tạo 1 workspace mặc định cho user đó và 2 channel thuộc workspace đó là general (1 kênh text và 1 kênh voice)
+    await databaseServices.prisma.workspace.create({
+      data: {
+        name: 'Workspace mặc định',
+        description: 'Workspace mặc định được tạo khi đăng ký tài khoản',
+        ownerId: userId,
+        channels: {
+          create: [
+            {
+              name: 'general',
+              description: 'Kênh chung',
+              type: ChannelType.TEXT,
+              isPrivate: false,
+              members: {
+                create: [
+                  {
+                    userId: userId,
+                    joinedAt: new Date()
+                  }
+                ]
+              }
+            },
+            {
+              name: 'voice',
+              description: 'Kênh thoại',
+              type: ChannelType.VOICE,
+              isPrivate: false,
+              members: {
+                create: [
+                  {
+                    userId: userId,
+                    joinedAt: new Date()
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        members: {
+          create: [
+            {
+              userId: userId,
+              role: WorkspaceMemberRole.OWNER,
+              joinedAt: new Date()
+            }
+          ]
+        }
+      },
+      include: {
+        channels: true
+      }
+    })
+  }
+
   async getAllUsers(page: string, limit: string, search: string) {
     const pageNumber = Number(page) || 1
     const limitNumber = Number(limit) || 10
@@ -168,6 +226,9 @@ class UserService {
         createdAt: true,
         fullName: true,
         phone: true,
+        bio: true,
+        dateOfBirth: true,
+        gender: true
       }
     })
     return users.map((user) => ({
@@ -176,7 +237,6 @@ class UserService {
     }))
   }
 
-  // Lấy user theo id
   async getUserById(id: bigint) {
     const user = await databaseServices.prisma.user.findUnique({
       where: { id },
@@ -201,14 +261,12 @@ class UserService {
     return user
   }
 
-  // Lấy user theo email
   async getUserByEmail(email: string) {
     return await databaseServices.prisma.user.findUnique({
       where: { email }
     })
   }
 
-  // Lấy user theo email
   async getUserByUsername(username: string) {
     console.log(username)
     const user = await databaseServices.prisma.user.findUnique({
@@ -218,35 +276,9 @@ class UserService {
     return user
   }
 
-  // Cập nhật user
-  async updateUser(
-    id: bigint,
-    payload: Partial<{
-      username: string
-      displayName: string
-      avatar: string
-      fullName: string
-      gender: 'MALE' | 'FEMALE' | 'OTHER'
-      bio: string
-      phone: string
-      dateOfBirth: string
-    }>
-  ) {
-    if (payload.username) {
-      const existing = await databaseServices.prisma.user.findUnique({
-        where: { username: payload.username }
-      })
-      if (existing && existing.id !== id) {
-        throw new ErrorWithStatus({
-          message: 'Username đã được sử dụng',
-          status: httpStatus.BAD_REQUESTED
-        })
-      }
-    }
-
+  async updateUser(id: bigint, payload: Partial<UpdateUserBody>) {
     const data: any = {}
-    if (payload.username !== undefined) data.username = payload.username
-    if (payload.displayName !== undefined) data.displayName = payload.displayName
+
     if (payload.avatar !== undefined) data.avatar = payload.avatar === '' ? null : payload.avatar
     if (payload.bio !== undefined) data.bio = payload.bio
     if (payload.phone !== undefined) data.phone = payload.phone === '' ? null : payload.phone
@@ -276,7 +308,6 @@ class UserService {
     return { ...user, id: user.id.toString() }
   }
 
-  // Cập nhật trạng thái online/offline
   async updateUserStatus(id: bigint, status: 'ONLINE' | 'OFFLINE' | 'AWAY' | 'BUSY') {
     return await databaseServices.prisma.user.update({
       where: { id },
@@ -284,7 +315,6 @@ class UserService {
     })
   }
 
-  // Đổi mật khẩu
   async changePassword(userId: bigint, oldPassword: string, newPassword: string) {
     const user = await databaseServices.prisma.user.findUnique({
       where: { id: userId }
@@ -312,6 +342,83 @@ class UserService {
     return {
       message: 'Đổi mật khẩu thành công'
     }
+  }
+
+  async getWorkspacesOfUser(userId: bigint) {
+    // đầu tiên lấy workspace mặc định của user trước và sau đó check xem user có là thành viên của workspace nào khác không
+    const workspaces = await databaseServices.prisma.workspace.findMany({
+      where: {
+        OR: [{ ownerId: userId }, { members: { some: { userId } } }]
+      }
+    })
+
+    return workspaces.map((workspace) => ({
+      ...workspace,
+      id: workspace.id.toString(),
+      ownerId: workspace.ownerId ? workspace.ownerId.toString() : null
+    }))
+  }
+
+  async addFriend(userId: bigint, friendId: bigint) {
+    const existing = await databaseServices.prisma.friend.findFirst({
+      where: {
+        requesterId: userId,
+        addresseeId: friendId,
+        status: FriendStatus.PENDING
+      }
+    })
+
+    if (existing) {
+      // // nếu đã tồn tại người A gửi người B thì lúc này sẽ hủy kết bạn, xóa đi lời mời này - xóa friend
+      await databaseServices.prisma.friend.delete({
+        where: {
+          id: existing.id
+        }
+      })
+      return
+    }
+    await databaseServices.prisma.friend.create({
+      data: {
+        requesterId: userId,
+        addresseeId: friendId,
+        status: FriendStatus.PENDING
+      }
+    })
+  }
+
+  // Lấy thông tin user và trạng thái kết bạn giữa user hiện tại và user được yêu cầu
+  async getInfoUserStatus(idAddress: bigint, idRequester: bigint) {
+    const user = await databaseServices.prisma.user.findUnique({
+      where: { id: idAddress },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        displayName: true,
+        avatar: true,
+        bio: true,
+        status: true,
+        createdAt: true,
+        fullName: true,
+        gender: true,
+        phone: true,
+        dateOfBirth: true,
+        receivedFriendRequests: {
+          where: {
+            requesterId: idRequester // lấy trạng thái friend của user hiện tại với user được yêu cầu
+          },
+          select: {
+            status: true
+          },
+          take: 1 // chỉ lấy 1 bản ghi vì chỉ có 1 trạng thái friend giữa 2 user
+        }
+      }
+    })
+
+    if (user) {
+      return { ...user, id: user.id.toString() }
+    }
+    return user
   }
 }
 

@@ -41,7 +41,7 @@ export interface AuthResponse {
   user: UserResponse
 }
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T> {
   message: string
   data?: T
   error?: string
