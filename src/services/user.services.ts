@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { signToken, verifyToken } from '~/utils/jwt'
 import databaseServices from './database.services'
-import { ChannelType, FriendStatus, TokenType, WorkspaceMemberRole } from '~/constants/enum'
+import { ChannelType, FriendStatus, FriendStatusRequest, TokenType, WorkspaceMemberRole } from '~/constants/enum'
 import { envConfig } from '~/utils/config'
 import { hashPassword } from '~/utils/scripto'
 import { ErrorWithStatus } from '~/constants/errors'
@@ -419,6 +420,117 @@ class UserService {
       return { ...user, id: user.id.toString() }
     }
     return user
+  }
+
+  async getAllFriends(userId: bigint, status: string, search: string) {
+    const keyword = search.trim()
+
+    const userSearch = keyword
+      ? {
+          OR: [
+            {
+              username: {
+                contains: keyword
+              }
+            },
+            {
+              displayName: {
+                contains: keyword
+              }
+            },
+            {
+              fullName: {
+                contains: keyword
+              }
+            }
+          ]
+        }
+      : undefined
+
+    let where: any
+
+    switch (status) {
+      case FriendStatusRequest.REQUEST_SENT:
+        where = {
+          requesterId: userId,
+          status: FriendStatus.PENDING,
+          ...(userSearch && {
+            addressee: userSearch
+          })
+        }
+        break
+
+      case FriendStatusRequest.REQUEST_RECEIVED:
+        where = {
+          addresseeId: userId,
+          status: FriendStatus.PENDING,
+          ...(userSearch && {
+            requester: userSearch
+          })
+        }
+        break
+
+      default:
+        where = {
+          status: FriendStatus.ACCEPTED,
+          OR: [
+            {
+              requesterId: userId,
+              ...(userSearch && {
+                addressee: userSearch
+              })
+            },
+            {
+              addresseeId: userId,
+              ...(userSearch && {
+                requester: userSearch
+              })
+            }
+          ]
+        }
+        break
+    }
+
+    const friends = await databaseServices.prisma.friend.findMany({
+      where,
+      orderBy: {
+        createdAt: 'desc'
+      },
+      include: {
+        requester: {
+          select: {
+            id: true,
+            username: true,
+            displayName: true,
+            avatar: true,
+            status: true,
+            fullName: true,
+            createdAt: true
+          }
+        },
+        addressee: {
+          select: {
+            id: true,
+            username: true,
+            displayName: true,
+            avatar: true,
+            status: true,
+            fullName: true,
+            createdAt: true
+          }
+        }
+      }
+    })
+
+    return friends.map((friend) => {
+      const user = friend.requesterId === userId ? friend.addressee : friend.requester
+
+      return {
+        ...user,
+        id: user.id.toString(),
+        createdAt: user.createdAt.toISOString()
+      }
+    })
   }
 }
 

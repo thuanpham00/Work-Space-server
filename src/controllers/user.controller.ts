@@ -16,6 +16,7 @@ import { ErrorWithStatus } from '~/constants/errors'
 import httpStatus from '~/constants/httpStatus'
 import { getUploadedFile } from '~/middlewares/upload.middlewares'
 import { ParamsDictionary } from 'express-serve-static-core'
+import { FriendResponse } from '~/models/responses/friend.responses'
 
 export const registerController = async (req: Request, res: Response) => {
   const body = req.body as RegisterBody
@@ -148,25 +149,6 @@ export const getAllUsers = async (req: Request<ParamsDictionary, any, any, GetAl
   res.json(response)
 }
 
-// export const getUserById = async (req: Request, res: Response) => {
-//   const { userId } = req.params
-//   const user = await userService.getUserById(BigInt(userId as string))
-
-//   if (!user) {
-//     throw new ErrorWithStatus({
-//       message: 'User không tồn tại',
-//       status: httpStatus.NOTFOUND
-//     })
-//   }
-
-//   const response: ApiResponse<UserResponse> = {
-//     message: 'Lấy thông tin user thành công',
-//     data: user as unknown as UserResponse
-//   }
-
-//   res.json(response)
-// }
-
 export const updateUser = async (req: AuthenticatedRequest, res: Response) => {
   const { user_id } = req.decode_authorization as TokenPayload
   const body = req.body as UpdateUserBody
@@ -294,6 +276,24 @@ export const getUserStatusController = async (req: Request, res: Response) => {
   const response: ApiResponse<{ user: UserResponse }> = {
     message: 'Lấy thông tin user thành công',
     data: { user: user as unknown as UserResponse }
+  }
+
+  res.json(response)
+}
+
+// lấy ds bạn bè dựa trên trạng thái (chờ xác nhận, đã gửi yêu cầu kb cho user, tất cả) dựa trên token của user hiện tại
+export const getAllFriendsController = async (req: AuthenticatedRequest, res: Response) => {
+  const { user_id } = req.decode_authorization as TokenPayload
+  const { status, search } = req.query as { status?: string; search?: string }
+
+  const friends = await userService.getAllFriends(BigInt(user_id), status as string, search as string)
+
+  const response: ApiResponse<{ friends: FriendResponse[]; total: number }> = {
+    message: 'Lấy danh sách bạn bè thành công',
+    data: {
+      friends: friends as unknown as FriendResponse[],
+      total: friends.length
+    }
   }
 
   res.json(response)

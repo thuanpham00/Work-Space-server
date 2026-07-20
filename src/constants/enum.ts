@@ -40,6 +40,12 @@ export enum FriendStatus {
   BLOCKED = 'BLOCKED'
 }
 
+export enum FriendStatusRequest {
+  REQUEST_SENT = 'REQUEST_SENT',
+  REQUEST_RECEIVED = 'REQUEST_RECEIVED',
+  ACCEPTED = 'ACCEPTED'
+}
+
 export enum Gender {
   MALE = 'MALE',
   FEMALE = 'FEMALE',

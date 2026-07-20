@@ -2,6 +2,7 @@ import { Router } from 'express'
 import {
   addFriendController,
   changePasswordController,
+  getAllFriendsController,
   getAllUsers,
   getMeController,
   getUserStatusController,
@@ -14,7 +15,7 @@ import {
   updateUser,
   uploadImageController
 } from '../controllers/user.controller'
-import { asyncHandler, validate } from '../middlewares/errorHandler.middlewares'
+import { asyncHandler, validate, validateQuery } from '../middlewares/errorHandler.middlewares'
 import { uploadMiddleware } from '~/middlewares/upload.middlewares'
 import {
   updateUserSchema,
@@ -25,6 +26,7 @@ import {
   addFriendSchema
 } from '../models/schemas/user.schemas'
 import { accessTokenValidator, refreshTokenValidator } from '~/middlewares/auth.middlewares'
+import { friendSchema } from '~/models/schemas/friend.schema'
 
 const router = Router()
 
@@ -75,4 +77,6 @@ router.patch('/:userId/status', accessTokenValidator, validate(updateStatusSchem
 // thêm bạn bè
 router.post('/addFriend', accessTokenValidator, validate(addFriendSchema), asyncHandler(addFriendController))
 
+// lấy danh sách bạn bè dựa trên trạng thái (pending, accepted, tất cả)
+router.get('/friends', accessTokenValidator, validateQuery(friendSchema), asyncHandler(getAllFriendsController))
 export default router
