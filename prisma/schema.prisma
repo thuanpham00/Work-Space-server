@@ -32,6 +32,7 @@ enum WorkspaceMemberRole {
 enum ChannelType {
   TEXT  @map("text")
   VOICE @map("voice")
+  DM    @map("dm")
 
   @@map("channel_type")
 }
@@ -97,8 +98,8 @@ model Friend {
   requesterId BigInt @map("requester_id") @db.UnsignedBigInt
   addresseeId BigInt @map("addressee_id") @db.UnsignedBigInt
 
-  requester User @relation("FriendRequester", fields: [requesterId], references: [id], onDelete: Cascade)
-  addressee User @relation("FriendAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+  requester User @relation("FriendRequester", fields: [requesterId], references: [id], onDelete: Cascade, map: "friends_requester_id_fk")
+  addressee User @relation("FriendAddressee", fields: [addresseeId], references: [id], onDelete: Cascade, map: "friends_addressee_id_fk")
 
   status FriendStatus @default(PENDING)
 
@@ -106,6 +107,7 @@ model Friend {
   acceptedAt DateTime?
 
   @@unique([requesterId, addresseeId])
+  @@index([addresseeId])
   @@map("friends")
 }
 
@@ -117,7 +119,7 @@ model RefreshToken {
   exp       Int      @map("exp")
   createdAt DateTime @default(now()) @map("created_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade) // Thiết lập quan hệ // ràng buộc khóa ngoại với khóa chính // onDelete: Cascade: khi xóa record cha thì record con cũng bị xóa
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, map: "refresh_tokens_user_id_fkey") // Thiết lập quan hệ // ràng buộc khóa ngoại với khóa chính // onDelete: Cascade: khi xóa record cha thì record con cũng bị xóa
 
   @@index([userId]) // Tạo index
   @@map("refresh_tokens") // Đổi tên bảng 
@@ -132,7 +134,7 @@ model Workspace {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  owner    User?             @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  owner    User?             @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: SetNull, map: "workspaces_owner_id_fkey")
   members  WorkspaceMember[]
   channels Channel[]
 
@@ -146,8 +148,8 @@ model WorkspaceMember {
   role        WorkspaceMemberRole @default(MEMBER)
   joinedAt    DateTime?           @map("joined_at")
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade, map: "workspace_members_workspace_id_fkey")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade, map: "workspace_members_user_id_fkey")
 
   @@id([workspaceId, userId])
   @@index([userId])
@@ -156,14 +158,14 @@ model WorkspaceMember {
 
 model Channel {
   id          BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
-  workspaceId BigInt       @map("workspace_id") @db.UnsignedBigInt
+  workspaceId BigInt?      @map("workspace_id") @db.UnsignedBigInt
   name        String?      @db.VarChar(100)
   description String?      @db.Text
   type        ChannelType?
   isPrivate   Boolean      @default(false) @map("is_private")
   createdAt   DateTime     @default(now()) @map("created_at")
 
-  workspace Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace Workspace?      @relation(fields: [workspaceId], references: [id], onDelete: Cascade, map: "channels_workspace_id_fkey")
   members   ChannelMember[]
   messages  Message[]
 
@@ -176,8 +178,8 @@ model ChannelMember {
   userId    BigInt    @map("user_id") @db.UnsignedBigInt
   joinedAt  DateTime? @map("joined_at")
 
-  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade, map: "channel_members_channel_id_fkey")
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "channel_members_user_id_fkey")
 
   @@id([channelId, userId])
   @@index([userId])
@@ -195,9 +197,9 @@ model Message {
   updatedAt   DateTime    @updatedAt @map("updated_at")
   deletedAt   DateTime?   @map("deleted_at")
 
-  channel     Channel           @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  sender      User              @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
-  replyTo     Message?          @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  channel     Channel           @relation(fields: [channelId], references: [id], onDelete: Cascade, map: "messages_channel_id_fkey")
+  sender      User              @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade, map: "messages_sender_id_fkey")
+  replyTo     Message?          @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull, map: "messages_reply_to_fkey")
   replies     Message[]         @relation("MessageReplies")
   attachments Attachment[]
   reactions   MessageReaction[]
@@ -217,7 +219,7 @@ model Attachment {
   fileSize  BigInt   @map("file_size") @db.UnsignedBigInt
   createdAt DateTime @default(now()) @map("created_at")
 
-  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade, map: "attachments_message_id_fkey")
 
   @@index([messageId])
   @@map("attachments")
@@ -240,9 +242,9 @@ model MessageReaction {
   emojiId   BigInt   @map("emoji_id") @db.UnsignedBigInt
   createdAt DateTime @default(now()) @map("created_at")
 
-  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  emoji   Emoji   @relation(fields: [emojiId], references: [id], onDelete: Cascade)
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade, map: "message_reactions_message_id_fkey")
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "message_reactions_user_id_fkey")
+  emoji   Emoji   @relation(fields: [emojiId], references: [id], onDelete: Cascade, map: "message_reactions_emoji_id_fkey")
 
   @@id([messageId, userId, emojiId])
   @@index([userId])

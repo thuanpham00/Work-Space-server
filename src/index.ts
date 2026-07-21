@@ -7,6 +7,9 @@ import { createServer } from 'http'
 import databaseServices from '~/services/database.services'
 import cookieParse from 'cookie-parser'
 import userRoutes from '~/routes/user.routes'
+import friendRoutes from '~/routes/friend.routes'
+import channelRoutes from '~/routes/channel.routes'
+
 import { errorHandler } from '~/middlewares/errorHandler.middlewares'
 config()
 
@@ -41,6 +44,8 @@ app.use(
 app.use(['/users'], limiter)
 
 app.use('/users', userRoutes)
+app.use('/friends', friendRoutes)
+app.use('/channels', channelRoutes)
 
 app.use(errorHandler)
 

@@ -205,13 +205,17 @@ class UserService {
     })
   }
 
-  async getAllUsers(page: string, limit: string, search: string) {
+  async getAllUsers(page: string, limit: string, search: string, me_id: string) {
     const pageNumber = Number(page) || 1
-    const limitNumber = Number(limit) || 10
+    const limitNumber = Number(limit) + 1 || 10
     const skip = (pageNumber - 1) * limitNumber
     const where: any = {}
     if (search) {
-      where.OR = [{ username: { contains: search } }, { displayName: { contains: search } }]
+      where.OR = [
+        { username: { contains: search } },
+        { displayName: { contains: search } },
+        { fullName: { contains: search } }
+      ]
     }
     const users = await databaseServices.prisma.user.findMany({
       where,
@@ -232,10 +236,12 @@ class UserService {
         gender: true
       }
     })
-    return users.map((user) => ({
-      ...user,
-      id: user.id.toString()
-    }))
+    return users
+      .filter((user) => user.id !== BigInt(me_id))
+      .map((user) => ({
+        ...user,
+        id: user.id.toString()
+      }))
   }
 
   async getUserById(id: bigint) {
@@ -269,11 +275,9 @@ class UserService {
   }
 
   async getUserByUsername(username: string) {
-    console.log(username)
     const user = await databaseServices.prisma.user.findUnique({
       where: { username }
     })
-    console.log(user)
     return user
   }
 
@@ -360,33 +364,6 @@ class UserService {
     }))
   }
 
-  async addFriend(userId: bigint, friendId: bigint) {
-    const existing = await databaseServices.prisma.friend.findFirst({
-      where: {
-        requesterId: userId,
-        addresseeId: friendId,
-        status: FriendStatus.PENDING
-      }
-    })
-
-    if (existing) {
-      // // nếu đã tồn tại người A gửi người B thì lúc này sẽ hủy kết bạn, xóa đi lời mời này - xóa friend
-      await databaseServices.prisma.friend.delete({
-        where: {
-          id: existing.id
-        }
-      })
-      return
-    }
-    await databaseServices.prisma.friend.create({
-      data: {
-        requesterId: userId,
-        addresseeId: friendId,
-        status: FriendStatus.PENDING
-      }
-    })
-  }
-
   // Lấy thông tin user và trạng thái kết bạn giữa user hiện tại và user được yêu cầu
   async getInfoUserStatus(idAddress: bigint, idRequester: bigint) {
     const user = await databaseServices.prisma.user.findUnique({
@@ -420,117 +397,6 @@ class UserService {
       return { ...user, id: user.id.toString() }
     }
     return user
-  }
-
-  async getAllFriends(userId: bigint, status: string, search: string) {
-    const keyword = search.trim()
-
-    const userSearch = keyword
-      ? {
-          OR: [
-            {
-              username: {
-                contains: keyword
-              }
-            },
-            {
-              displayName: {
-                contains: keyword
-              }
-            },
-            {
-              fullName: {
-                contains: keyword
-              }
-            }
-          ]
-        }
-      : undefined
-
-    let where: any
-
-    switch (status) {
-      case FriendStatusRequest.REQUEST_SENT:
-        where = {
-          requesterId: userId,
-          status: FriendStatus.PENDING,
-          ...(userSearch && {
-            addressee: userSearch
-          })
-        }
-        break
-
-      case FriendStatusRequest.REQUEST_RECEIVED:
-        where = {
-          addresseeId: userId,
-          status: FriendStatus.PENDING,
-          ...(userSearch && {
-            requester: userSearch
-          })
-        }
-        break
-
-      default:
-        where = {
-          status: FriendStatus.ACCEPTED,
-          OR: [
-            {
-              requesterId: userId,
-              ...(userSearch && {
-                addressee: userSearch
-              })
-            },
-            {
-              addresseeId: userId,
-              ...(userSearch && {
-                requester: userSearch
-              })
-            }
-          ]
-        }
-        break
-    }
-
-    const friends = await databaseServices.prisma.friend.findMany({
-      where,
-      orderBy: {
-        createdAt: 'desc'
-      },
-      include: {
-        requester: {
-          select: {
-            id: true,
-            username: true,
-            displayName: true,
-            avatar: true,
-            status: true,
-            fullName: true,
-            createdAt: true
-          }
-        },
-        addressee: {
-          select: {
-            id: true,
-            username: true,
-            displayName: true,
-            avatar: true,
-            status: true,
-            fullName: true,
-            createdAt: true
-          }
-        }
-      }
-    })
-
-    return friends.map((friend) => {
-      const user = friend.requesterId === userId ? friend.addressee : friend.requester
-
-      return {
-        ...user,
-        id: user.id.toString(),
-        createdAt: user.createdAt.toISOString()
-      }
-    })
   }
 }
 

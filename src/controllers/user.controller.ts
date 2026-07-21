@@ -136,7 +136,8 @@ export const getMeController = async (req: AuthenticatedRequest, res: Response) 
 
 export const getAllUsers = async (req: Request<ParamsDictionary, any, any, GetAllUsersQueryParams>, res: Response) => {
   const { page, limit, search } = req.query
-  const users = await userService.getAllUsers(page as string, limit as string, search as string)
+  const { user_id: me_id } = req.decode_authorization as TokenPayload
+  const users = await userService.getAllUsers(page as string, limit as string, search as string, me_id as string)
 
   const response: ApiResponse<{ users: UserResponse[]; total: number }> = {
     message: 'Lấy danh sách users thành công',
@@ -227,24 +228,6 @@ export const getWorkspaceUserController = async (req: AuthenticatedRequest, res:
   res.json(response)
 }
 
-export const addFriendController = async (req: AuthenticatedRequest, res: Response) => {
-  const { user_id } = req.decode_authorization as TokenPayload
-  const { friendId } = req.body as { friendId: string }
-
-  if (user_id === friendId) {
-    throw new ErrorWithStatus({
-      message: 'Bạn không thể thêm chính mình làm bạn bè',
-      status: httpStatus.BAD_REQUESTED
-    })
-  }
-
-  await userService.addFriend(BigInt(user_id), BigInt(friendId))
-
-  res.json({
-    message: 'Yêu cầu kết bạn đã được gửi thành công'
-  })
-}
-
 // lấy thông tin user và trạng thái friend của user đó với user hiện tại
 export const getUserStatusController = async (req: Request, res: Response) => {
   const { userId: addressId } = req.params
@@ -276,24 +259,6 @@ export const getUserStatusController = async (req: Request, res: Response) => {
   const response: ApiResponse<{ user: UserResponse }> = {
     message: 'Lấy thông tin user thành công',
     data: { user: user as unknown as UserResponse }
-  }
-
-  res.json(response)
-}
-
-// lấy ds bạn bè dựa trên trạng thái (chờ xác nhận, đã gửi yêu cầu kb cho user, tất cả) dựa trên token của user hiện tại
-export const getAllFriendsController = async (req: AuthenticatedRequest, res: Response) => {
-  const { user_id } = req.decode_authorization as TokenPayload
-  const { status, search } = req.query as { status?: string; search?: string }
-
-  const friends = await userService.getAllFriends(BigInt(user_id), status as string, search as string)
-
-  const response: ApiResponse<{ friends: FriendResponse[]; total: number }> = {
-    message: 'Lấy danh sách bạn bè thành công',
-    data: {
-      friends: friends as unknown as FriendResponse[],
-      total: friends.length
-    }
   }
 
   res.json(response)

@@ -10,7 +10,8 @@ export enum MediaType {
 
 export enum ChannelType {
   TEXT = 'TEXT',
-  VOICE = 'VOICE'
+  VOICE = 'VOICE',
+  DM = 'DM'
 }
 
 export enum WorkspaceMemberRole {
