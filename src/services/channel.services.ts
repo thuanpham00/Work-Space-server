@@ -2,23 +2,38 @@ import { ChannelType } from '~/constants/enum'
 import databaseServices from './database.services'
 
 class ChannelService {
-  async getDirectMessageChannels(userId: bigint) {
-    const channels = await databaseServices.prisma.channel.findMany({
+  async getDirectMessageChannelDetail(idUser: bigint, idReceiver: bigint) {
+    const channel = await databaseServices.prisma.channel.findFirst({
       where: {
         type: ChannelType.DM,
+        AND: [{ members: { some: { userId: idUser } } }, { members: { some: { userId: idReceiver } } }]
+      },
+      include: {
         members: {
-          some: {
-            userId: userId
+          include: {
+            user: true
           }
         }
       }
     })
-    return channels.map((item) => {
-      return {
-        ...item,
-        id: item.id.toString()
-      }
-    })
+
+    if (!channel) return null
+
+    const { members, ...restChannel } = channel
+
+    return {
+      ...restChannel,
+      id: channel.id.toString(),
+      workspaceId: channel.workspaceId ? channel.workspaceId.toString() : null,
+      friend: members
+        .filter((member) => member.userId !== idUser)
+        .map((member) => {
+          return {
+            ...member.user,
+            id: member.user.id.toString()
+          }
+        })[0] || null
+    }
   }
 }
 

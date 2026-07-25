@@ -63,6 +63,10 @@ export const addFriendSchema = z.object({
   friendId: z.string().min(1, 'ID của bạn bè không được để trống')
 })
 
+export const userIdParamSchema = z.object({
+  userId: z.string().min(1, 'ID user của bạn không được để trống')
+})
+
 // Type inference từ schema
 export type RegisterBody = z.infer<typeof registerSchema>
 export type UpdateUserBody = z.infer<typeof updateUserSchema>
