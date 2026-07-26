@@ -11,7 +11,8 @@
     "lint:fix": "eslint . --fix",
     "prettier": "prettier --check .",
     "prettier:fix": "prettier --write .",
-    "seed:users": "tsx src/utils/seed-users.ts"
+    "seed:users": "tsx src/utils/seed-users.ts",
+    "update:privacy": "tsx src/utils/update-privacy-settings.ts"
   },
   "keywords": [],
   "author": "",
@@ -43,8 +44,8 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1085.0",
     "@google/generative-ai": "^0.24.1",
-    "@prisma/adapter-mariadb": "^7.8.0",
-    "@prisma/client": "^7.8.0",
+    "@prisma/adapter-pg": "^7.9.0",
+    "@prisma/client": "^7.9.0",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
@@ -59,7 +60,7 @@
     "mongodb": "^7.2.0",
     "mysql2": "^3.22.5",
     "openai": "^6.37.0",
-    "prisma": "^7.8.0",
+    "prisma": "^7.9.0",
     "sharp": "^0.35.3",
     "socket.io": "^4.8.3",
     "uuid": "^14.0.1",

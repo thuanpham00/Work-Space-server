@@ -1,7 +1,8 @@
 import 'dotenv/config'
-import { PrismaMariaDb } from '@prisma/adapter-mariadb'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '../generated/prisma/client'
 import { hashPassword } from '~/utils/scripto'
+import { Pool } from 'pg'
 
 function createMariaDbAdapter() {
   const url = process.env.DATABASE_URL
@@ -11,13 +12,15 @@ function createMariaDbAdapter() {
 
   const parsed = new URL(url)
 
-  return new PrismaMariaDb({
-    host: parsed.hostname,
-    port: parsed.port ? Number(parsed.port) : 3306,
-    user: decodeURIComponent(parsed.username),
-    password: decodeURIComponent(parsed.password),
-    database: parsed.pathname.slice(1)
-  })
+  return new PrismaPg(
+    new Pool({
+      host: parsed.hostname,
+      port: parsed.port ? Number(parsed.port) : 5432,
+      user: decodeURIComponent(parsed.username),
+      password: decodeURIComponent(parsed.password),
+      database: parsed.pathname.slice(1)
+    })
+  )
 }
 
 class DatabaseService {

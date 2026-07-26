@@ -1,15 +1,10 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
 }
 
 enum UserStatus {
@@ -64,7 +59,7 @@ enum Gender {
 }
 
 model User {
-  id          BigInt     @id @default(autoincrement()) @db.UnsignedBigInt // kiểu dữ liệu prisma - khóa chính - mặc định tự động tăng - kiểu trong db mysql
+  id          BigInt     @id @default(autoincrement())  // kiểu dữ liệu prisma - khóa chính - mặc định tự động tăng - kiểu trong db mysql
   email       String     @unique @db.VarChar(255)
   password    String     @db.VarChar(255)
   username    String?    @unique @db.VarChar(100)
@@ -78,6 +73,7 @@ model User {
   phone       String?    @db.VarChar(100)
   gender      Gender?    @default(MALE)
   fullName    String?    @db.VarChar(100)
+  privacySettings Json?  @map("privacy_settings")
 
   refreshTokens    RefreshToken[]
   ownedWorkspaces  Workspace[]       @relation("WorkspaceOwner")
@@ -93,10 +89,10 @@ model User {
 }
 
 model Friend {
-  id BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  id BigInt @id @default(autoincrement()) 
 
-  requesterId BigInt @map("requester_id") @db.UnsignedBigInt
-  addresseeId BigInt @map("addressee_id") @db.UnsignedBigInt
+  requesterId BigInt @map("requester_id") 
+  addresseeId BigInt @map("addressee_id") 
 
   requester User @relation("FriendRequester", fields: [requesterId], references: [id], onDelete: Cascade, map: "friends_requester_id_fk")
   addressee User @relation("FriendAddressee", fields: [addresseeId], references: [id], onDelete: Cascade, map: "friends_addressee_id_fk")
@@ -112,8 +108,8 @@ model Friend {
 }
 
 model RefreshToken {
-  id        BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
-  userId    BigInt   @map("user_id") @db.UnsignedBigInt
+  id        BigInt   @id @default(autoincrement()) 
+  userId    BigInt   @map("user_id") 
   token     String   @unique @db.VarChar(255)
   iat       Int      @map("iat")
   exp       Int      @map("exp")
@@ -126,11 +122,11 @@ model RefreshToken {
 }
 
 model Workspace {
-  id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  id          BigInt   @id @default(autoincrement()) 
   name        String?  @db.VarChar(255)
   description String?  @db.Text
   avatar      String?  @db.VarChar(500)
-  ownerId     BigInt?  @map("owner_id") @db.UnsignedBigInt
+  ownerId     BigInt?  @map("owner_id") 
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -143,8 +139,8 @@ model Workspace {
 }
 
 model WorkspaceMember {
-  workspaceId BigInt              @map("workspace_id") @db.UnsignedBigInt
-  userId      BigInt              @map("user_id") @db.UnsignedBigInt
+  workspaceId BigInt              @map("workspace_id") 
+  userId      BigInt              @map("user_id") 
   role        WorkspaceMemberRole @default(MEMBER)
   joinedAt    DateTime?           @map("joined_at")
 
@@ -157,8 +153,8 @@ model WorkspaceMember {
 }
 
 model Channel {
-  id          BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
-  workspaceId BigInt?      @map("workspace_id") @db.UnsignedBigInt
+  id          BigInt       @id @default(autoincrement()) 
+  workspaceId BigInt?      @map("workspace_id") 
   name        String?      @db.VarChar(100)
   description String?      @db.Text
   type        ChannelType?
@@ -174,8 +170,8 @@ model Channel {
 }
 
 model ChannelMember {
-  channelId BigInt    @map("channel_id") @db.UnsignedBigInt
-  userId    BigInt    @map("user_id") @db.UnsignedBigInt
+  channelId BigInt    @map("channel_id") 
+  userId    BigInt    @map("user_id") 
   joinedAt  DateTime? @map("joined_at")
 
   channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade, map: "channel_members_channel_id_fkey")
@@ -187,12 +183,12 @@ model ChannelMember {
 }
 
 model Message {
-  id          BigInt      @id @default(autoincrement()) @db.UnsignedBigInt
-  channelId   BigInt      @map("channel_id") @db.UnsignedBigInt
-  senderId    BigInt      @map("sender_id") @db.UnsignedBigInt
+  id          BigInt      @id @default(autoincrement()) 
+  channelId   BigInt      @map("channel_id") 
+  senderId    BigInt      @map("sender_id") 
   content     String?     @db.Text
   messageType MessageType @map("message_type")
-  replyToId   BigInt?     @map("reply_to") @db.UnsignedBigInt
+  replyToId   BigInt?     @map("reply_to") 
   createdAt   DateTime    @default(now()) @map("created_at")
   updatedAt   DateTime    @updatedAt @map("updated_at")
   deletedAt   DateTime?   @map("deleted_at")
@@ -211,12 +207,12 @@ model Message {
 }
 
 model Attachment {
-  id        BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
-  messageId BigInt   @map("message_id") @db.UnsignedBigInt
+  id        BigInt   @id @default(autoincrement()) 
+  messageId BigInt   @map("message_id") 
   fileName  String   @map("file_name") @db.VarChar(255)
   fileUrl   String   @map("file_url") @db.VarChar(1000)
   mimeType  String   @map("mime_type") @db.VarChar(100)
-  fileSize  BigInt   @map("file_size") @db.UnsignedBigInt
+  fileSize  BigInt   @map("file_size") 
   createdAt DateTime @default(now()) @map("created_at")
 
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade, map: "attachments_message_id_fkey")
@@ -226,7 +222,7 @@ model Attachment {
 }
 
 model Emoji {
-  id        BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  id        BigInt  @id @default(autoincrement()) 
   shortcode String  @db.VarChar(100)
   unicode   String  @db.VarChar(20)
   imageUrl  String? @map("image_url") @db.VarChar(500)
@@ -237,9 +233,9 @@ model Emoji {
 }
 
 model MessageReaction {
-  messageId BigInt   @map("message_id") @db.UnsignedBigInt
-  userId    BigInt   @map("user_id") @db.UnsignedBigInt
-  emojiId   BigInt   @map("emoji_id") @db.UnsignedBigInt
+  messageId BigInt   @map("message_id") 
+  userId    BigInt   @map("user_id") 
+  emojiId   BigInt   @map("emoji_id") 
   createdAt DateTime @default(now()) @map("created_at")
 
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade, map: "message_reactions_message_id_fkey")

@@ -75,7 +75,6 @@ class UserService {
   }
 
   async login({ email, password }: { email: string; password: string }) {
-    console.log(envConfig.expire_in_access_token)
     const user = await databaseServices.prisma.user.findUnique({
       where: { email, password: hashPassword(password) }
     })
@@ -259,7 +258,8 @@ class UserService {
         fullName: true,
         gender: true,
         phone: true,
-        dateOfBirth: true
+        dateOfBirth: true,
+        privacySettings: true
       }
     })
     if (user) {
