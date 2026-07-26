@@ -24,7 +24,9 @@ export const updateUserSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày sinh phải có định dạng YYYY-MM-DD')
     .refine((v) => !isNaN(Date.parse(v)), 'Ngày sinh không hợp lệ')
     .optional()
-    .nullable()
+    .nullable(),
+  status: z.enum(['ONLINE', 'OFFLINE', 'BUSY']).optional().nullable(),
+  privacySettings: z.string().optional().nullable()
 })
 
 // Schema cho việc đăng nhập
@@ -65,6 +67,10 @@ export const addFriendSchema = z.object({
 
 export const userIdParamSchema = z.object({
   userId: z.string().min(1, 'ID user của bạn không được để trống')
+})
+
+export const channelIdSchema = z.object({
+  channelId: z.string().min(1, 'ID channel của bạn không được để trống')
 })
 
 // Type inference từ schema

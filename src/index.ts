@@ -11,7 +11,13 @@ import friendRoutes from '~/routes/friend.routes'
 import channelRoutes from '~/routes/channel.routes'
 
 import { errorHandler } from '~/middlewares/errorHandler.middlewares'
+import { initialSocket } from '~/socket'
 config()
+
+// Sửa lỗi BigInt không thể JSON.stringify được
+;(BigInt.prototype as any).toJSON = function () {
+  return this.toString()
+}
 
 const PORT = process.env.PORT
 const limiter = rateLimit({
@@ -55,6 +61,8 @@ databaseServices.connect().then(async () => {
 })
 
 const httpServer = createServer(app) // tạo 1 server đựa trên app của Express
+
+initialSocket(httpServer)
 
 httpServer.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`)

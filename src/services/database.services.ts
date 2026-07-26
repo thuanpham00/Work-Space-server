@@ -29,7 +29,7 @@ class DatabaseService {
   constructor() {
     this.prisma = new PrismaClient({
       adapter: createMariaDbAdapter(),
-      log: ['query', 'info', 'warn', 'error']
+      log: ['info', 'warn', 'error']
     })
   }
   async connect() {

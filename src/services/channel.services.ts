@@ -25,14 +25,43 @@ class ChannelService {
       ...restChannel,
       id: channel.id.toString(),
       workspaceId: channel.workspaceId ? channel.workspaceId.toString() : null,
-      friend: members
-        .filter((member) => member.userId !== idUser)
-        .map((member) => {
-          return {
-            ...member.user,
-            id: member.user.id.toString()
-          }
-        })[0] || null
+      friend:
+        members
+          .filter((member) => member.userId !== idUser)
+          .map((member) => {
+            return {
+              ...member.user,
+              id: member.user.id.toString()
+            }
+          })[0] || null
+    }
+  }
+
+  async getMessagesForDM(channelId: bigint, limit: number, page: number) {
+    const [messages, total] = await Promise.all([
+      databaseServices.prisma.message.findMany({
+        where: {
+          channelId
+        },
+        take: limit,
+        skip: (page - 1) * limit,
+        orderBy: {
+          createdAt: 'desc'
+        },
+        include: {
+          sender: true
+        }
+      }),
+      databaseServices.prisma.message.count({
+        where: {
+          channelId
+        }
+      })
+    ])
+
+    return {
+      messages,
+      total
     }
   }
 }

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { signToken, verifyToken } from '~/utils/jwt'
 import databaseServices from './database.services'
-import { ChannelType, FriendStatus, FriendStatusRequest, TokenType, WorkspaceMemberRole } from '~/constants/enum'
+import { ChannelType, TokenType, WorkspaceMemberRole } from '~/constants/enum'
 import { envConfig } from '~/utils/config'
 import { hashPassword } from '~/utils/scripto'
 import { ErrorWithStatus } from '~/constants/errors'
@@ -290,6 +290,8 @@ class UserService {
     if (payload.dateOfBirth !== undefined) data.dateOfBirth = payload.dateOfBirth
     if (payload.fullName !== undefined) data.fullName = payload.fullName
     if (payload.gender !== undefined) data.gender = payload.gender
+    if (payload.status !== undefined) data.status = payload.status
+    if (payload.privacySettings !== undefined) data.privacySettings = payload.privacySettings
 
     const user = await databaseServices.prisma.user.update({
       where: { id },

@@ -1,23 +1,26 @@
 import { Router } from 'express'
 import { getChannelMessagesController, getDirectMessageChannelsController } from '~/controllers/channel.controller'
 import { accessTokenValidator } from '~/middlewares/auth.middlewares'
-import { asyncHandler, validate, validateParams } from '~/middlewares/errorHandler.middlewares'
-import { userIdParamSchema } from '~/models/schemas/user.schemas'
+import { asyncHandler, validate, validateParams, validateQuery } from '~/middlewares/errorHandler.middlewares'
+import { queryBase } from '~/models/schemas/query.schema'
+import { channelIdSchema, userIdParamSchema } from '~/models/schemas/user.schemas'
 const router = Router()
 
-// lấy phòng chat channel DM của dựa tren user gửi vào và token request
+// lấy tin nhắn của phòng chat dựa trên channelId
+router.get(
+  '/messages/:channelId',
+  accessTokenValidator,
+  validateParams(channelIdSchema),
+  validateQuery(queryBase),
+  asyncHandler(getChannelMessagesController)
+)
+
+// lấy thông tin phòng chat channel DM của dựa tren userId (receiver)
 router.get(
   '/direct-messages/:userId',
   accessTokenValidator,
   validateParams(userIdParamSchema),
   asyncHandler(getDirectMessageChannelsController)
-)
-
-router.get(
-  '/direct-messages/:userId/messages',
-  accessTokenValidator,
-  validateParams(userIdParamSchema),
-  asyncHandler(getChannelMessagesController)
 )
 
 export default router
