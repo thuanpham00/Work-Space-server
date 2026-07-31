@@ -31,7 +31,8 @@ export enum MessageType {
   TEXT = 'TEXT',
   IMAGE = 'IMAGE',
   FILE = 'FILE',
-  EMOJI = 'EMOJI'
+  EMOJI = 'EMOJI',
+  GIF = 'GIF'
 }
 
 export enum FriendStatus {

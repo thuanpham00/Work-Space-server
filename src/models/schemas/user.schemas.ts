@@ -26,7 +26,7 @@ export const updateUserSchema = z.object({
     .optional()
     .nullable(),
   status: z.enum(['ONLINE', 'OFFLINE', 'BUSY']).optional().nullable(),
-  privacySettings: z.string().optional().nullable()
+  privacySettings: z.object().optional().nullable()
 })
 
 // Schema cho việc đăng nhập

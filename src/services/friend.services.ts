@@ -12,17 +12,20 @@ class FriendService {
           OR: [
             {
               username: {
-                contains: keyword
+                contains: keyword,
+                mode: 'insensitive' as const
               }
             },
             {
               displayName: {
-                contains: keyword
+                contains: keyword,
+                mode: 'insensitive' as const
               }
             },
             {
               fullName: {
-                contains: keyword
+                contains: keyword,
+                mode: 'insensitive' as const
               }
             }
           ]

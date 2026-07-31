@@ -3,6 +3,7 @@ import { Server as ServerHttp } from 'http'
 import { verifyAccessToken } from '~/utils/utils'
 import { TokenPayload } from '~/models/responses/user.responses'
 import databaseServices from '~/services/database.services'
+import { MessageType } from '~/constants/enum'
 
 /**
  * socket = Kết nối cá nhân của 1 user. (Nên dùng socket.join là cầm tay duy nhất user đó dắt vào phòng).
@@ -79,6 +80,11 @@ export const initialSocket = (httpSocket: ServerHttp) => {
       console.log(`User ${user_id} joined channel ${channel_id}`)
     })
 
+    socket.on('leave_channel', (channel_id) => {
+      socket.leave(channel_id.toString())
+      console.log(`User ${user_id} left channel ${channel_id}`)
+    })
+
     socket.on('send_message', async (data) => {
       const res = await databaseServices.prisma.message.create({
         data: {
@@ -91,6 +97,36 @@ export const initialSocket = (httpSocket: ServerHttp) => {
         },
         include: {
           sender: true
+        }
+      })
+
+      io.to(data.channel_id.toString()).emit('receive_message', res)
+    })
+
+    socket.on('send_gif', async (data) => {
+      const { channel_id, file_name, file_url, mime_type, file_size } = data
+
+      const res = await databaseServices.prisma.message.create({
+        data: {
+          channelId: Number(channel_id),
+          senderId: Number(user_id),
+          content: '',
+          messageType: MessageType.GIF,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          attachments: {
+            create: {
+              fileName: file_name,
+              fileUrl: file_url,
+              mimeType: mime_type,
+              fileSize: Number(file_size),
+              createdAt: new Date()
+            }
+          }
+        },
+        include: {
+          sender: true,
+          attachments: true
         }
       })
 

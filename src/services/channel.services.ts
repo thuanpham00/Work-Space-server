@@ -49,7 +49,8 @@ class ChannelService {
           createdAt: 'desc'
         },
         include: {
-          sender: true
+          sender: true,
+          attachments: true
         }
       }),
       databaseServices.prisma.message.count({
