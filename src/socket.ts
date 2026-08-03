@@ -4,6 +4,8 @@ import { verifyAccessToken } from '~/utils/utils'
 import { TokenPayload } from '~/models/responses/user.responses'
 import databaseServices from '~/services/database.services'
 import { MessageType } from '~/constants/enum'
+import { addSocket, getSocketIds, removeSocket } from '~/socket/online-users'
+import { registerCallGateway } from '~/socket/call.gateway'
 
 /**
  * socket = Kết nối cá nhân của 1 user. (Nên dùng socket.join là cầm tay duy nhất user đó dắt vào phòng).
@@ -11,12 +13,6 @@ import { MessageType } from '~/constants/enum'
  */
 
 export const initialSocket = (httpSocket: ServerHttp) => {
-  const users: {
-    [key: string]: {
-      sockets: string[]
-    }
-  } = {}
-
   const io = new Server(httpSocket, {
     cors: {
       origin: ['http://localhost:5173'], // url của frontend
@@ -54,9 +50,8 @@ export const initialSocket = (httpSocket: ServerHttp) => {
   io.on('connection', async (socket) => {
     const { user_id } = socket.handshake.auth.decode_authorization as TokenPayload
 
-    users[user_id] = users[user_id] || { sockets: [] } // nếu có rồi thì thôi còn chưa có gán cái roleKey vào
-    users[user_id].sockets.push(socket.id)
-    console.log('connected users:', users)
+    addSocket(user_id, socket.id)
+    console.log(`user ${user_id} connected with socket ${socket.id}, total sockets:`, getSocketIds(user_id).length)
 
     socket.use(async (packet, next) => {
       try {
@@ -74,6 +69,10 @@ export const initialSocket = (httpSocket: ServerHttp) => {
         socket.disconnect()
       }
     })
+
+    // Đăng ký call gateway (signaling cho Audio/Video call 1-1).
+    // Gateway này tự quản lý cleanup khi socket disconnect.
+    // registerCallGateway(io, socket)
 
     socket.on('join_channel', (channel_id) => {
       socket.join(channel_id.toString())
@@ -135,12 +134,11 @@ export const initialSocket = (httpSocket: ServerHttp) => {
 
     // sự kiện mặc định của socket server - nếu ngắt kết nối (client ngắt, đóng tab) -> nó chạy
     socket.on('disconnect', () => {
-      const u = users[user_id]
-      if (u) {
-        u.sockets = u.sockets.filter((s) => s !== socket.id)
-        if (u.sockets.length === 0) delete users[user_id]
-      }
-      console.log(`socket ${socket.id} disconnected for user ${user_id}`)
+      removeSocket(socket.id)
+      console.log(
+        `socket ${socket.id} disconnected for user ${user_id}, remaining sockets:`,
+        getSocketIds(user_id).length
+      )
     })
   })
 }
