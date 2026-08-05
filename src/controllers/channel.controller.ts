@@ -1,17 +1,17 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Response } from 'express'
 import { AuthenticatedRequest } from '~/models/requests/user.requests'
 import { ChannelDM } from '~/models/responses/channel.response'
-import { FriendResponse } from '~/models/responses/friend.responses'
 import { Message } from '~/models/responses/message.response'
 import { ApiResponse, TokenPayload } from '~/models/responses/user.responses'
 import { QueryBase } from '~/models/schemas/query.schema'
 import channelServices from '~/services/channel.services'
 
 export const getDirectMessageChannelsController = async (req: AuthenticatedRequest, res: Response) => {
-  const { user_id: idUser } = req.decode_authorization as TokenPayload
-  const { userId: idRecevier } = req.params as { userId: string }
+  const { user_id: userId } = req.decode_authorization as TokenPayload
+  const { userId: receivedId } = req.params as { userId: string }
 
-  const channels = await channelServices.getDirectMessageChannelDetail(BigInt(idUser), BigInt(idRecevier))
+  const channels = await channelServices.getDirectMessageChannelDetail(BigInt(userId), BigInt(receivedId))
   const response: ApiResponse<{ channel: ChannelDM | null }> = {
     message: 'Lấy chi tiết channels thành công',
     data: {

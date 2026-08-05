@@ -9,6 +9,7 @@ import cookieParse from 'cookie-parser'
 import userRoutes from '~/routes/user.routes'
 import friendRoutes from '~/routes/friend.routes'
 import channelRoutes from '~/routes/channel.routes'
+import workspaceRoutes from '~/routes/workspace.routes'
 
 import { errorHandler } from '~/middlewares/errorHandler.middlewares'
 import { initialSocket } from '~/socket'
@@ -52,6 +53,7 @@ app.use(['/users'], limiter)
 app.use('/users', userRoutes)
 app.use('/friends', friendRoutes)
 app.use('/channels', channelRoutes)
+app.use('/workspaces', workspaceRoutes)
 
 app.use(errorHandler)
 

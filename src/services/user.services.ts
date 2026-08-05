@@ -351,21 +351,6 @@ class UserService {
     }
   }
 
-  async getWorkspacesOfUser(userId: bigint) {
-    // đầu tiên lấy workspace mặc định của user trước và sau đó check xem user có là thành viên của workspace nào khác không
-    const workspaces = await databaseServices.prisma.workspace.findMany({
-      where: {
-        OR: [{ ownerId: userId }, { members: { some: { userId } } }]
-      }
-    })
-
-    return workspaces.map((workspace) => ({
-      ...workspace,
-      id: workspace.id.toString(),
-      ownerId: workspace.ownerId ? workspace.ownerId.toString() : null
-    }))
-  }
-
   // Lấy thông tin user và trạng thái kết bạn giữa user hiện tại và user được yêu cầu
   async getInfoUserStatus(idAddress: bigint, idRequester: bigint) {
     const user = await databaseServices.prisma.user.findUnique({

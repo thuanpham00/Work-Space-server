@@ -4,7 +4,6 @@ import {
   getAllUsers,
   getMeController,
   getUserStatusController,
-  getWorkspaceUserController,
   loginController,
   logoutController,
   refreshTokenController,
@@ -43,9 +42,6 @@ router.get('/', accessTokenValidator, asyncHandler(getAllUsers))
 
 // lấy thông tin user hiện tại
 router.get('/me', accessTokenValidator, asyncHandler(getMeController))
-
-// lấy thông tin workspace của user hiện tại (workspace của user và workspace mà user là thành viên)
-router.get('/workspaces', accessTokenValidator, asyncHandler(getWorkspaceUserController))
 
 // lấy thông tin user và trạng thái friend của user đó với user hiện tại
 router.get('/:userId/status', accessTokenValidator, asyncHandler(getUserStatusController))

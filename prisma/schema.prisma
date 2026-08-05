@@ -159,6 +159,7 @@ model Channel {
   type        ChannelType?
   isPrivate   Boolean      @default(false) @map("is_private")
   createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @default(now()) @updatedAt @map("updated_at")
 
   workspace Workspace?      @relation(fields: [workspaceId], references: [id], onDelete: Cascade, map: "channels_workspace_id_fkey")
   members   ChannelMember[]

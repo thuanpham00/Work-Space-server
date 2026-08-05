@@ -5,12 +5,17 @@ import { TokenPayload } from '~/models/responses/user.responses'
 import databaseServices from '~/services/database.services'
 import { MessageType } from '~/constants/enum'
 import { addSocket, getSocketIds, removeSocket } from '~/socket/online-users'
-import { registerCallGateway } from '~/socket/call.gateway'
 
 /**
  * socket = Kết nối cá nhân của 1 user. (Nên dùng socket.join là cầm tay duy nhất user đó dắt vào phòng).
    io = Máy chủ tổng (Server). (Nên dùng io.to(...).emit(...) là lệnh từ máy chủ tổng phát thanh xuống cho tất cả những user nào đang có mặt trong cái phòng đó).
  */
+
+const Socket_Room = {
+  user: (userId: string) => `user:${userId}`,
+  workspace: (workspaceId: string) => `workspace:${workspaceId}`,
+  channel: (channelId: string) => `channel:${channelId}`
+}
 
 export const initialSocket = (httpSocket: ServerHttp) => {
   const io = new Server(httpSocket, {
@@ -75,12 +80,12 @@ export const initialSocket = (httpSocket: ServerHttp) => {
     // registerCallGateway(io, socket)
 
     socket.on('join_channel', (channel_id) => {
-      socket.join(channel_id.toString())
+      socket.join(Socket_Room.channel(channel_id.toString()))
       console.log(`User ${user_id} joined channel ${channel_id}`)
     })
 
     socket.on('leave_channel', (channel_id) => {
-      socket.leave(channel_id.toString())
+      socket.leave(Socket_Room.channel(channel_id.toString()))
       console.log(`User ${user_id} left channel ${channel_id}`)
     })
 
@@ -99,7 +104,7 @@ export const initialSocket = (httpSocket: ServerHttp) => {
         }
       })
 
-      io.to(data.channel_id.toString()).emit('receive_message', res)
+      io.to(Socket_Room.channel(data.channel_id.toString())).emit('receive_message', res)
     })
 
     socket.on('send_gif', async (data) => {

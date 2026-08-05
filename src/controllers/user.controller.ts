@@ -16,7 +16,6 @@ import { ErrorWithStatus } from '~/constants/errors'
 import httpStatus from '~/constants/httpStatus'
 import { getUploadedFile } from '~/middlewares/upload.middlewares'
 import { ParamsDictionary } from 'express-serve-static-core'
-import { FriendResponse } from '~/models/responses/friend.responses'
 
 export const registerController = async (req: Request, res: Response) => {
   const body = req.body as RegisterBody
@@ -211,21 +210,6 @@ export const changePasswordController = async (req: AuthenticatedRequest, res: R
   res.json({
     message: result.message
   })
-}
-
-export const getWorkspaceUserController = async (req: AuthenticatedRequest, res: Response) => {
-  const { user_id } = req.decode_authorization as TokenPayload
-  const workspaces = await userService.getWorkspacesOfUser(BigInt(user_id))
-
-  const response: ApiResponse<{ workspaces: any[]; total: number }> = {
-    message: 'Lấy danh sách workspace thành công',
-    data: {
-      workspaces: workspaces,
-      total: workspaces.length
-    }
-  }
-
-  res.json(response)
 }
 
 // lấy thông tin user và trạng thái friend của user đó với user hiện tại
