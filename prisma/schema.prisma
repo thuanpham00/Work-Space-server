@@ -80,6 +80,7 @@ model User {
   channelMembers   ChannelMember[]
   messages         Message[]         @relation("MessageSender")
   reactions        MessageReaction[]
+  channelReadStates ChannelReadState[] @relation("ChannelReadUser")
 
   sentFriendRequests     Friend[] @relation("FriendRequester")
   receivedFriendRequests Friend[] @relation("FriendAddressee")
@@ -131,10 +132,27 @@ model Workspace {
 
   owner    User?             @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: SetNull, map: "workspaces_owner_id_fkey")
   members  WorkspaceMember[]
+  categories CategoryChannel[]
   channels Channel[]
 
   @@index([ownerId])
   @@map("workspaces")
+}
+
+model CategoryChannel {
+  id          BigInt   @id @default(autoincrement())
+  workspaceId BigInt   @map("workspace_id")
+  name        String   @db.VarChar(100)
+  position    Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade, map: "category_channels_workspace_id_fkey")
+  channels  Channel[]
+
+  @@index([workspaceId])
+  @@unique([workspaceId, name])
+  @@map("category_channels")
 }
 
 model WorkspaceMember {
@@ -154,6 +172,7 @@ model WorkspaceMember {
 model Channel {
   id          BigInt       @id @default(autoincrement()) 
   workspaceId BigInt?      @map("workspace_id") 
+  categoryId  BigInt?      @map("category_id")
   name        String?      @db.VarChar(100)
   description String?      @db.Text
   type        ChannelType?
@@ -162,10 +181,13 @@ model Channel {
   updatedAt   DateTime     @default(now()) @updatedAt @map("updated_at")
 
   workspace Workspace?      @relation(fields: [workspaceId], references: [id], onDelete: Cascade, map: "channels_workspace_id_fkey")
+  category  CategoryChannel? @relation(fields: [categoryId], references: [id], onDelete: SetNull, map: "channels_category_id_fkey")
   members   ChannelMember[]
   messages  Message[]
+  readStates ChannelReadState[] @relation("ChannelReadChannel")
 
   @@index([workspaceId])
+  @@index([categoryId])
   @@map("channels")
 }
 
@@ -204,6 +226,22 @@ model Message {
   @@index([senderId])
   @@index([replyToId])
   @@map("messages")
+}
+
+model ChannelReadState {
+  userId            BigInt    @map("user_id")
+  channelId         BigInt    @map("channel_id")
+  lastReadMessageId BigInt?   @map("last_read_message_id")
+  lastReadAt        DateTime? @map("last_read_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  user    User    @relation("ChannelReadUser", fields: [userId], references: [id], onDelete: Cascade, map: "channel_read_states_user_id_fkey")
+  channel Channel @relation("ChannelReadChannel", fields: [channelId], references: [id], onDelete: Cascade, map: "channel_read_states_channel_id_fkey")
+
+  @@id([userId, channelId])
+  @@index([channelId])
+  @@map("channel_read_states")
 }
 
 model Attachment {

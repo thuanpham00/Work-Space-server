@@ -8,7 +8,6 @@ const router = Router()
 // lấy thông tin workspace của user hiện tại (workspace của user và workspace mà user là thành viên)
 router.get('/', accessTokenValidator, asyncHandler(getWorkspaceUserController))
 
-
 // lấy thông tin workspace của user hiện tại gồm ds channel của workspace
 router.get('/:id', accessTokenValidator, asyncHandler(getWorkspaceDetailController))
 
