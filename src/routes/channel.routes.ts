@@ -1,10 +1,17 @@
 import { Router } from 'express'
-import { getChannelMessagesController, getDirectMessageChannelsController } from '~/controllers/channel.controller'
+import {
+  createChannelController,
+  getChannelMessagesController,
+  getDirectMessageChannelsController
+} from '~/controllers/channel.controller'
 import { accessTokenValidator } from '~/middlewares/auth.middlewares'
 import { asyncHandler, validate, validateParams, validateQuery } from '~/middlewares/errorHandler.middlewares'
 import { queryBase } from '~/models/schemas/query.schema'
 import { channelIdSchema, userIdParamSchema } from '~/models/schemas/user.schemas'
+import { createChannelSchema } from '../models/schemas/channel.schema'
 const router = Router()
+
+router.post('/', accessTokenValidator, validate(createChannelSchema), asyncHandler(createChannelController))
 
 // lấy tin nhắn của phòng chat dựa trên channelId
 router.get(

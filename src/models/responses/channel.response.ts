@@ -28,6 +28,7 @@ export interface ChannelDM {
 export interface Channel {
   id: string
   workspaceId: string | null
+  categoryId: string | null
   name: string | null
   description: string | null
   type: string | null

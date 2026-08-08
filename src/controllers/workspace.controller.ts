@@ -26,7 +26,7 @@ export const getWorkspaceDetailController = async (req: AuthenticatedRequest, re
   if (!workspaces) return res.status(404).json({ message: 'Workspace not found' })
 
   const response: ApiResponse<{ workspace: Workspace }> = {
-    message: 'Lấy danh sách workspace thành công',
+    message: 'Lấy chi tiết workspace thành công',
     data: {
       workspace: workspaces
     }
