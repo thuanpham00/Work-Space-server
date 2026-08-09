@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import {
   createChannelController,
+  getChannelDetailController,
   getChannelMessagesController,
   getDirectMessageChannelsController
 } from '~/controllers/channel.controller'
@@ -12,6 +13,14 @@ import { createChannelSchema } from '../models/schemas/channel.schema'
 const router = Router()
 
 router.post('/', accessTokenValidator, validate(createChannelSchema), asyncHandler(createChannelController))
+
+// lấy chi tiết channel dựa trên channelId
+router.get(
+  '/:channelId',
+  accessTokenValidator,
+  validateParams(channelIdSchema),
+  asyncHandler(getChannelDetailController)
+)
 
 // lấy tin nhắn của phòng chat dựa trên channelId
 router.get(

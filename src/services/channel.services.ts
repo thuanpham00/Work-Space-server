@@ -65,6 +65,53 @@ class ChannelService {
       total
     }
   }
+
+  async getChannelDetail(channelId: bigint) {
+    const channel = await databaseServices.prisma.channel.findUnique({
+      where: {
+        id: channelId
+      },
+      include: {
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                username: true,
+                displayName: true,
+                avatar: true,
+                status: true
+              }
+            }
+          }
+        }
+      }
+    })
+
+    if (!channel) return null
+
+    return {
+      id: channel.id.toString(),
+      workspaceId: channel.workspaceId ? channel.workspaceId.toString() : null,
+      categoryId: channel.categoryId ? channel.categoryId.toString() : null,
+      name: channel.name,
+      description: channel.description,
+      type: channel.type,
+      isPrivate: channel.isPrivate,
+      createdAt: channel.createdAt.toISOString(),
+      updatedAt: channel.updatedAt.toISOString(),
+      members: channel.members.map((m) => ({
+        joinedAt: m.joinedAt ? m.joinedAt.toISOString() : null,
+        userId: m.userId.toString(),
+        email: m.user.email,
+        username: m.user.username,
+        displayName: m.user.displayName,
+        avatar: m.user.avatar,
+        status: m.user.status
+      }))
+    }
+  }
 }
 
 export default new ChannelService()

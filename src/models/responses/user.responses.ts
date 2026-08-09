@@ -13,20 +13,21 @@ export interface User {
   username: string | null
   displayName: string | null
   avatar: string | null
-  bio: string | null
+  fullname: string | null
   status: UserStatus
+  bio: string | null
+  phone: string | null
+  dateOfBirth: string | null
   createdAt: Date
   updatedAt: Date
-}
-
-export interface UserResponse {
-  id: string
-  email: string
-  username: string | null
-  displayName: string | null
-  avatar: string | null
-  status: UserStatus
-  createdAt: string
+  gender: string | null
+  receivedFriendRequests?: { status: string }[]
+  privacySettings?: {
+    showEmail: boolean
+    showPhone: boolean
+    showDateOfBirth: boolean
+    showGender: boolean
+  }
 }
 
 export interface TokenPayload {
@@ -38,7 +39,7 @@ export interface TokenPayload {
 
 export interface AuthResponse {
   access_token: string
-  user: UserResponse
+  user: User
 }
 
 export interface ApiResponse<T> {

@@ -376,7 +376,8 @@ class UserService {
             status: true
           },
           take: 1 // chỉ lấy 1 bản ghi vì chỉ có 1 trạng thái friend giữa 2 user
-        }
+        },
+        privacySettings: true
       }
     })
 

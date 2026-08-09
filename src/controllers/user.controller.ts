@@ -11,7 +11,7 @@ import {
   ChangePasswordBody
 } from '../models/schemas/user.schemas'
 import { AuthenticatedRequest, GetAllUsersQueryParams } from '../models/requests/user.requests'
-import { ApiResponse, AuthResponse, TokenPayload, UserResponse } from '~/models/responses/user.responses'
+import { ApiResponse, AuthResponse, TokenPayload, User } from '~/models/responses/user.responses'
 import { ErrorWithStatus } from '~/constants/errors'
 import httpStatus from '~/constants/httpStatus'
 import { getUploadedFile } from '~/middlewares/upload.middlewares'
@@ -37,9 +37,9 @@ export const registerController = async (req: Request, res: Response) => {
 
   const { user } = await userService.register(body)
 
-  const response: ApiResponse<UserResponse> = {
+  const response: ApiResponse<User> = {
     message: 'Đăng ký thành công',
-    data: user as unknown as UserResponse
+    data: user as unknown as User
   }
 
   res.status(201).json(response)
@@ -70,7 +70,7 @@ export const loginController = async (req: Request, res: Response) => {
     message: 'Đăng nhập thành công',
     data: {
       access_token: accessToken,
-      user: userInfo as unknown as UserResponse
+      user: userInfo as unknown as User
     }
   }
 
@@ -123,10 +123,10 @@ export const getMeController = async (req: AuthenticatedRequest, res: Response) 
   const { user_id } = req.decode_authorization as TokenPayload
   const user = await userService.getUserById(BigInt(user_id))
 
-  const response: ApiResponse<{ user: UserResponse }> = {
+  const response: ApiResponse<{ user: User }> = {
     message: 'Lấy thông tin user thành công',
     data: {
-      user: user as unknown as UserResponse
+      user: user as unknown as User
     }
   }
 
@@ -138,10 +138,10 @@ export const getAllUsers = async (req: Request<ParamsDictionary, any, any, GetAl
   const { user_id: me_id } = req.decode_authorization as TokenPayload
   const users = await userService.getAllUsers(page as string, limit as string, search as string, me_id as string)
 
-  const response: ApiResponse<{ users: UserResponse[]; total: number }> = {
+  const response: ApiResponse<{ users: User[]; total: number }> = {
     message: 'Lấy danh sách users thành công',
     data: {
-      users: users as unknown as UserResponse[],
+      users: users as unknown as User[],
       total: users.length
     }
   }
@@ -155,9 +155,9 @@ export const updateUser = async (req: AuthenticatedRequest, res: Response) => {
 
   const user = await userService.updateUser(BigInt(user_id as string), body)
 
-  const response: ApiResponse<UserResponse> = {
+  const response: ApiResponse<User> = {
     message: 'Cập nhật user thành công',
-    data: user as unknown as UserResponse
+    data: user as unknown as User
   }
 
   res.json(response)
@@ -177,9 +177,9 @@ export const updateStatus = async (req: AuthenticatedRequest, res: Response) => 
 
   const user = await userService.updateUserStatus(BigInt(userId as string), status)
 
-  const response: ApiResponse<UserResponse> = {
+  const response: ApiResponse<User> = {
     message: 'Cập nhật trạng thái thành công',
-    data: user as unknown as UserResponse
+    data: user as unknown as User
   }
 
   res.json(response)
@@ -240,9 +240,9 @@ export const getUserStatusController = async (req: Request, res: Response) => {
     })
   }
 
-  const response: ApiResponse<{ user: UserResponse }> = {
+  const response: ApiResponse<{ user: User }> = {
     message: 'Lấy thông tin user thành công',
-    data: { user: user as unknown as UserResponse }
+    data: { user: user as unknown as User }
   }
 
   res.json(response)

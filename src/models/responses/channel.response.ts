@@ -35,4 +35,15 @@ export interface Channel {
   isPrivate: boolean
   createdAt: string
   updatedAt: string
+  members?: MemberChannel[]
+}
+
+export interface MemberChannel {
+  joinedAt: string
+  userId: string
+  email: string
+  username: string
+  displayName: string
+  avatar: string
+  status: string
 }

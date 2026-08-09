@@ -13,49 +13,29 @@ import channelServices from '~/services/channel.services'
 import databaseServices from '~/services/database.services'
 
 export const createChannelController = async (req: AuthenticatedRequest, res: Response) => {
-  const { workspaceId, categoryId, name, description, type, isPrivate } = req.body as CreateChannelBody
+  const { categoryId, name, description, type, isPrivate } = req.body as CreateChannelBody
 
-  const workspace = await databaseServices.prisma.workspace.findUnique({
+  const category = await databaseServices.prisma.categoryChannel.findUnique({
     where: {
-      id: BigInt(workspaceId)
+      id: BigInt(categoryId)
     }
   })
 
-  if (!workspace) {
+  if (!category) {
     throw new ErrorWithStatus({
-      message: 'Workspace không tồn tại',
+      message: 'Category không tồn tại',
       status: httpStatus.NOTFOUND
     })
   }
 
-  let normalizedCategoryId: bigint | null = null
-
-  if (categoryId) {
-    const category = await databaseServices.prisma.categoryChannel.findFirst({
-      where: {
-        id: BigInt(categoryId),
-        workspaceId: BigInt(workspaceId)
-      }
-    })
-
-    if (!category) {
-      throw new ErrorWithStatus({
-        message: 'Category không tồn tại trong workspace này',
-        status: httpStatus.NOTFOUND
-      })
-    }
-
-    normalizedCategoryId = category.id
-  }
-
   const channel = await databaseServices.prisma.channel.create({
     data: {
-      workspaceId: BigInt(workspaceId),
-      categoryId: normalizedCategoryId,
+      workspaceId: category.workspaceId,
+      categoryId: category.id,
       name,
       description: description ?? null,
-      type: type as ChannelType,
-      isPrivate
+      type: type.toUpperCase() as ChannelType,
+      isPrivate: isPrivate ?? false
     }
   })
 
@@ -112,3 +92,24 @@ export const getChannelMessagesController = async (req: AuthenticatedRequest, re
 
   res.json(response)
 }
+
+export const getChannelDetailController = async (req: AuthenticatedRequest, res: Response) => {
+  const { channelId } = req.params as { channelId: string }
+
+  const channel = await channelServices.getChannelDetail(BigInt(channelId))
+
+  if (!channel) {
+    throw new ErrorWithStatus({
+      message: 'Channel không tồn tại',
+      status: httpStatus.NOTFOUND
+    })
+  }
+
+  res.json({
+    message: 'Lấy chi tiết channel thành công',
+    data: {
+      channel
+    }
+  })
+}
+
