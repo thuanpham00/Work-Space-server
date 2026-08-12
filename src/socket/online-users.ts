@@ -42,12 +42,3 @@ export const getSocketIds = (userId: UserId): SocketId[] => {
   const set = userSockets.get(userId)
   return set ? Array.from(set) : []
 }
-
-export const getUserIdBySocketId = (socketId: SocketId): UserId | null => socketToUser.get(socketId) ?? null
-
-export const isOnline = (userId: UserId): boolean => {
-  const set = userSockets.get(userId)
-  return !!set && set.size > 0
-}
-
-export const getOnlineUserIds = (): UserId[] => Array.from(userSockets.keys())

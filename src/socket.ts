@@ -17,6 +17,75 @@ const Socket_Room = {
   channel: (channelId: string) => `channel:${channelId}`
 }
 
+const upsertChannelReadState = async (userId: number, channelId: number, lastReadMessageId?: number) => {
+  const latestMessageId =
+    lastReadMessageId ??
+    (
+      await databaseServices.prisma.message.findFirst({
+        where: { channelId },
+        orderBy: { id: 'desc' },
+        select: { id: true }
+      })
+    )?.id
+
+  await databaseServices.prisma.channelReadState.upsert({
+    where: {
+      userId_channelId: {
+        userId,
+        channelId
+      }
+    },
+    create: {
+      userId,
+      channelId,
+      lastReadMessageId: latestMessageId,
+      lastReadAt: new Date()
+    },
+    update: {
+      lastReadMessageId: latestMessageId,
+      lastReadAt: new Date()
+    }
+  })
+}
+
+// xử lý bắn socket tới những user (trừ người gửi) thuộc channel đó nhưng không join vào channel đó
+const emitUnreadChannel = async (
+  io: Server,
+  params: {
+    channelId: number
+    senderId: number
+    latestMessageId: number
+  }
+) => {
+  const { channelId, senderId, latestMessageId } = params
+  const channel = await databaseServices.prisma.channel.findFirst({
+    where: {
+      id: channelId
+    },
+    select: { workspaceId: true }
+  })
+
+  if (!channel) return
+
+  const members = await databaseServices.prisma.channelMember.findMany({
+    where: {
+      channelId: channelId,
+      userId: {
+        not: senderId
+      }
+    },
+    select: { userId: true }
+  })
+
+  for (const member of members) {
+    io.to(Socket_Room.user(member.userId.toString())).emit('channel_unread', {
+      channelId,
+      workspaceId: channel.workspaceId,
+      latestMessageId
+    })
+  }
+}
+
 export const initialSocket = (httpSocket: ServerHttp) => {
   const io = new Server(httpSocket, {
     cors: {
@@ -54,9 +123,26 @@ export const initialSocket = (httpSocket: ServerHttp) => {
   // sự kiện mặc định của socket server - tự động chạy khi có connect từ client tới
   io.on('connection', async (socket) => {
     const { user_id } = socket.handshake.auth.decode_authorization as TokenPayload
+    const userId = Number(user_id)
+    // Channel đang mở trên socket này (chỉ join 1 channel tại 1 thời điểm)
+    let activeChannelId: string | null = null
 
     addSocket(user_id, socket.id)
-    console.log(`user ${user_id} connected with socket ${socket.id}, total sockets:`, getSocketIds(user_id).length)
+
+    // join room user
+    socket.join(Socket_Room.user(user_id))
+
+    const workspaceMembers = await databaseServices.prisma.workspaceMember.findMany({
+      where: { userId },
+      select: { workspaceId: true }
+    })
+
+    // join room workspace
+    for (const member of workspaceMembers) {
+      socket.join(Socket_Room.workspace(member.workspaceId.toString()))
+    }
+
+    console.log(`user ${user_id} joined rooms: user + ${workspaceMembers.length} workspace(s)`)
 
     socket.use(async (packet, next) => {
       try {
@@ -75,24 +161,34 @@ export const initialSocket = (httpSocket: ServerHttp) => {
       }
     })
 
-    // Đăng ký call gateway (signaling cho Audio/Video call 1-1).
-    // Gateway này tự quản lý cleanup khi socket disconnect.
-    // registerCallGateway(io, socket)
+    socket.on('join_channel', async (channel_id) => {
+      const channelId = channel_id.toString()
 
-    socket.on('join_channel', (channel_id) => {
-      socket.join(Socket_Room.channel(channel_id.toString()))
-      console.log(`User ${user_id} joined channel ${channel_id}`)
+      if (activeChannelId && activeChannelId !== null) {
+        socket.leave(Socket_Room.channel(activeChannelId))
+      }
+
+      socket.join(Socket_Room.channel(channelId))
+      activeChannelId = channelId
+      await upsertChannelReadState(userId, Number(channelId))
     })
 
     socket.on('leave_channel', (channel_id) => {
-      socket.leave(Socket_Room.channel(channel_id.toString()))
-      console.log(`User ${user_id} left channel ${channel_id}`)
+      const channelId = channel_id.toString()
+
+      if (activeChannelId === channelId) {
+        activeChannelId = null
+      }
+
+      socket.leave(Socket_Room.channel(channelId))
     })
 
     socket.on('send_message', async (data) => {
+      const channelId = Number(data.channel_id)
+
       const res = await databaseServices.prisma.message.create({
         data: {
-          channelId: Number(data.channel_id),
+          channelId: channelId,
           senderId: Number(user_id),
           content: data.content,
           messageType: data.message_type,
@@ -104,11 +200,18 @@ export const initialSocket = (httpSocket: ServerHttp) => {
         }
       })
 
-      io.to(Socket_Room.channel(data.channel_id.toString())).emit('receive_message', res)
+      io.to(Socket_Room.channel(channelId.toString())).emit('receive_message', res)
+
+      await emitUnreadChannel(io, {
+        channelId,
+        senderId: userId,
+        latestMessageId: Number(res.id)
+      })
     })
 
     socket.on('send_gif', async (data) => {
       const { channel_id, file_name, file_url, mime_type, file_size } = data
+      const channelId = channel_id.toString()
 
       const res = await databaseServices.prisma.message.create({
         data: {
@@ -135,6 +238,12 @@ export const initialSocket = (httpSocket: ServerHttp) => {
       })
 
       io.to(data.channel_id.toString()).emit('receive_message', res)
+
+      await emitUnreadChannel(io, {
+        channelId,
+        senderId: userId,
+        latestMessageId: Number(res.id)
+      })
     })
 
     // sự kiện mặc định của socket server - nếu ngắt kết nối (client ngắt, đóng tab) -> nó chạy
