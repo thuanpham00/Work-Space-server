@@ -170,6 +170,8 @@ export const initialSocket = (httpSocket: ServerHttp) => {
 
       socket.join(Socket_Room.channel(channelId))
       activeChannelId = channelId
+
+      console.log(`user ${user_id} joined channel ${channelId}`)
       await upsertChannelReadState(userId, Number(channelId))
     })
 
@@ -201,6 +203,8 @@ export const initialSocket = (httpSocket: ServerHttp) => {
       })
 
       io.to(Socket_Room.channel(channelId.toString())).emit('receive_message', res)
+
+      console.log(res)
 
       await emitUnreadChannel(io, {
         channelId,
