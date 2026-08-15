@@ -4,15 +4,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { envConfig } from '~/utils/config'
 import { ErrorWithStatus } from '~/constants/errors'
 import httpStatus from '~/constants/httpStatus'
-
-interface UploadImageResult {
-  url: string
-  key: string
-  width: number
-  height: number
-  size: number
-  format: string
-}
+import { Media } from '~/models/responses/media.response'
 
 class R2Service {
   private client: S3Client
@@ -32,7 +24,7 @@ class R2Service {
     this.publicLink = envConfig.r2_link_public
   }
 
-  async uploadImage(buffer: Buffer, userId: string): Promise<UploadImageResult> {
+  async uploadImage(buffer: Buffer, link: string): Promise<Media> {
     const meta = await sharp(buffer).metadata()
     const allowedFormats = ['jpeg', 'png', 'webp', 'gif', 'avif']
     if (!meta.format || !allowedFormats.includes(meta.format)) {
@@ -44,7 +36,7 @@ class R2Service {
 
     const ext = meta.format === 'jpeg' ? 'jpg' : meta.format
     const fileName = `${uuidv4()}.${ext}`
-    const key = `user/${userId}/${fileName}`
+    const key = link + `/${fileName}`
 
     await this.client.send(
       new PutObjectCommand({
@@ -56,17 +48,17 @@ class R2Service {
       })
     )
 
-    const baseLink = this.publicLink.startsWith('http')
-      ? this.publicLink
-      : `https://${this.publicLink}`
+    const baseLink = this.publicLink.startsWith('http') ? this.publicLink : `https://${this.publicLink}`
 
     return {
+      id: uuidv4(),
       url: `${baseLink}/${key}`,
       key,
+      name: fileName,
       width: meta.width || 0,
       height: meta.height || 0,
       size: buffer.length,
-      format: meta.format
+      type: 'image/' + meta.format
     }
   }
 }

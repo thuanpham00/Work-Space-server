@@ -54,7 +54,6 @@ app.use('/users', userRoutes)
 app.use('/friends', friendRoutes)
 app.use('/channels', channelRoutes)
 app.use('/workspaces', workspaceRoutes)
-
 app.use(errorHandler)
 
 databaseServices.connect().then(async () => {

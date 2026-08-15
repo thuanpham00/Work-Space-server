@@ -3,6 +3,7 @@ import { Response } from 'express'
 import { ChannelType } from '~/constants/enum'
 import { ErrorWithStatus } from '~/constants/errors'
 import httpStatus from '~/constants/httpStatus'
+import { getUploadedFile } from '~/middlewares/upload.middlewares'
 import { AuthenticatedRequest } from '~/models/requests/user.requests'
 import { Channel, ChannelDM } from '~/models/responses/channel.response'
 import { Message } from '~/models/responses/message.response'
@@ -11,6 +12,8 @@ import { CreateChannelBody } from '~/models/schemas/channel.schema'
 import { QueryBase } from '~/models/schemas/query.schema'
 import channelServices from '~/services/channel.services'
 import databaseServices from '~/services/database.services'
+import fs from 'fs'
+import r2Services from '~/services/r2.services'
 
 export const createChannelController = async (req: AuthenticatedRequest, res: Response) => {
   const { categoryId, name, description, type, isPrivate } = req.body as CreateChannelBody
@@ -113,3 +116,19 @@ export const getChannelDetailController = async (req: AuthenticatedRequest, res:
   })
 }
 
+export const uploadImageController = async (req: AuthenticatedRequest, res: Response) => {
+  const imageFile = getUploadedFile(req, 'file')
+
+  const buffer = fs.readFileSync(imageFile.filepath)
+  const channelId = req.params.id
+  const link = `channel/${channelId}`
+
+  const result = await r2Services.uploadImage(buffer, link)
+
+  const response: ApiResponse<typeof result> = {
+    message: 'Upload ảnh thành công',
+    data: result
+  }
+
+  res.status(httpStatus.CREATED).json(response)
+}

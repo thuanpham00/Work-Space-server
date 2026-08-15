@@ -5,6 +5,7 @@ import { TokenPayload } from '~/models/responses/user.responses'
 import databaseServices from '~/services/database.services'
 import { MessageType } from '~/constants/enum'
 import { addSocket, getSocketIds, removeSocket } from '~/socket/online-users'
+import { Media } from '~/models/responses/media.response'
 
 /**
  * socket = Kết nối cá nhân của 1 user. (Nên dùng socket.join là cầm tay duy nhất user đó dắt vào phòng).
@@ -129,21 +130,6 @@ export const initialSocket = (httpSocket: ServerHttp) => {
 
     addSocket(user_id, socket.id)
 
-    // join room user
-    socket.join(Socket_Room.user(user_id))
-
-    const workspaceMembers = await databaseServices.prisma.workspaceMember.findMany({
-      where: { userId },
-      select: { workspaceId: true }
-    })
-
-    // join room workspace
-    for (const member of workspaceMembers) {
-      socket.join(Socket_Room.workspace(member.workspaceId.toString()))
-    }
-
-    console.log(`user ${user_id} joined rooms: user + ${workspaceMembers.length} workspace(s)`)
-
     socket.use(async (packet, next) => {
       try {
         const { access_token } = socket.handshake.auth
@@ -187,6 +173,8 @@ export const initialSocket = (httpSocket: ServerHttp) => {
 
     socket.on('send_message', async (data) => {
       const channelId = Number(data.channel_id)
+      const isFiles = data.files.length > 0 ? true : false
+      let response = {}
 
       const res = await databaseServices.prisma.message.create({
         data: {
@@ -202,9 +190,33 @@ export const initialSocket = (httpSocket: ServerHttp) => {
         }
       })
 
-      io.to(Socket_Room.channel(channelId.toString())).emit('receive_message', res)
+      response = {
+        ...res,
+        attachments: []
+      }
 
-      console.log(res)
+      if (isFiles) {
+        const files = data.files.map((f: Media) => {
+          return {
+            messageId: res.id,
+            fileName: f.name,
+            fileUrl: f.url,
+            mimeType: f.type,
+            fileSize: f.size,
+            createdAt: new Date()
+          }
+        })
+        const filesRes = await databaseServices.prisma.attachment.createManyAndReturn({
+          data: files
+        })
+
+        response = {
+          ...res,
+          attachments: filesRes
+        }
+      }
+
+      io.to(Socket_Room.channel(channelId.toString())).emit('receive_message', response)
 
       await emitUnreadChannel(io, {
         channelId,
@@ -258,5 +270,20 @@ export const initialSocket = (httpSocket: ServerHttp) => {
         getSocketIds(user_id).length
       )
     })
+
+    // join room user
+    socket.join(Socket_Room.user(user_id))
+
+    const workspaceMembers = await databaseServices.prisma.workspaceMember.findMany({
+      where: { userId },
+      select: { workspaceId: true }
+    })
+
+    // join room workspace
+    for (const member of workspaceMembers) {
+      socket.join(Socket_Room.workspace(member.workspaceId.toString()))
+    }
+
+    console.log(`user ${user_id} joined rooms: user + ${workspaceMembers.length} workspace(s)`)
   })
 }

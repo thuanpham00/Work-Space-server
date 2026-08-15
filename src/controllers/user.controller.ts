@@ -190,8 +190,9 @@ export const uploadImageController = async (req: AuthenticatedRequest, res: Resp
 
   const buffer = fs.readFileSync(imageFile.filepath)
   const userId = (req.decode_authorization as TokenPayload).user_id
+  const link = `user/${userId}`
 
-  const result = await r2Service.uploadImage(buffer, userId)
+  const result = await r2Service.uploadImage(buffer, link)
 
   const response: ApiResponse<typeof result> = {
     message: 'Upload ảnh thành công',

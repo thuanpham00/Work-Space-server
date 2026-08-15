@@ -3,16 +3,22 @@ import {
   createChannelController,
   getChannelDetailController,
   getChannelMessagesController,
-  getDirectMessageChannelsController
+  getDirectMessageChannelsController,
+  uploadImageController
 } from '~/controllers/channel.controller'
 import { accessTokenValidator } from '~/middlewares/auth.middlewares'
 import { asyncHandler, validate, validateParams, validateQuery } from '~/middlewares/errorHandler.middlewares'
 import { queryBase } from '~/models/schemas/query.schema'
 import { channelIdSchema, userIdParamSchema } from '~/models/schemas/user.schemas'
 import { createChannelSchema } from '../models/schemas/channel.schema'
+import { uploadMiddleware } from '~/middlewares/upload.middlewares'
 const router = Router()
 
+// tạo channel
 router.post('/', accessTokenValidator, validate(createChannelSchema), asyncHandler(createChannelController))
+
+// upload ảnh
+router.post('/:id/upload', accessTokenValidator, uploadMiddleware(), asyncHandler(uploadImageController))
 
 // lấy chi tiết channel dựa trên channelId
 router.get(
