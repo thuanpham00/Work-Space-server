@@ -84,6 +84,8 @@ model User {
 
   sentFriendRequests     Friend[] @relation("FriendRequester")
   receivedFriendRequests Friend[] @relation("FriendAddressee")
+  pinnedMessages         PinnedMessage[]
+  channelNicknames       ChannelMemberNickname[]
 
   @@map("users") // Đổi tên bảng
 }
@@ -185,6 +187,9 @@ model Channel {
   members   ChannelMember[]
   messages  Message[]
   readStates ChannelReadState[] @relation("ChannelReadChannel")
+  config     ChannelConfig?
+  pinnedMessages PinnedMessage[]
+  nicknames   ChannelMemberNickname[]
 
   @@index([workspaceId])
   @@index([categoryId])
@@ -221,6 +226,7 @@ model Message {
   replies     Message[]         @relation("MessageReplies")
   attachments Attachment[]
   reactions   MessageReaction[]
+  pinnedIn    PinnedMessage[]
 
   @@index([channelId])
   @@index([senderId])
@@ -271,9 +277,9 @@ model Emoji {
 }
 
 model MessageReaction {
-  messageId BigInt   @map("message_id") 
-  userId    BigInt   @map("user_id") 
-  emojiId   BigInt   @map("emoji_id") 
+  messageId BigInt   @map("message_id")
+  userId    BigInt   @map("user_id")
+  emojiId   BigInt   @map("emoji_id")
   createdAt DateTime @default(now()) @map("created_at")
 
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade, map: "message_reactions_message_id_fkey")
@@ -284,4 +290,47 @@ model MessageReaction {
   @@index([userId])
   @@index([emojiId])
   @@map("message_reactions")
+}
+
+model ChannelConfig {
+  id            BigInt   @id @default(autoincrement())
+  channelId     BigInt   @unique @map("channel_id")
+  backgroundUrl String?  @map("background_url") @db.VarChar(500)
+  accent        String?  @db.VarChar(20)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade, map: "channel_configs_channel_id_fkey")
+
+  @@map("channel_configs")
+}
+
+model PinnedMessage {
+  id        BigInt   @id @default(autoincrement())
+  channelId BigInt   @map("channel_id")
+  messageId BigInt   @map("message_id")
+  pinnedBy  BigInt   @map("pinned_by")
+  pinnedAt  DateTime @default(now()) @map("pinned_at")
+
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade, map: "pinned_messages_channel_id_fkey")
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade, map: "pinned_messages_message_id_fkey")
+  user    User    @relation(fields: [pinnedBy], references: [id], onDelete: Cascade, map: "pinned_messages_pinned_by_fkey")
+
+  @@unique([channelId, messageId])
+  @@index([channelId])
+  @@map("pinned_messages")
+}
+
+model ChannelMemberNickname {
+  id        BigInt   @id @default(autoincrement())
+  channelId BigInt   @map("channel_id")
+  userId    BigInt   @map("user_id")
+  nickname  String?  @db.VarChar(100)
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade, map: "channel_member_nicknames_channel_id_fkey")
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "channel_member_nicknames_user_id_fkey")
+
+  @@unique([channelId, userId])
+  @@map("channel_member_nicknames")
 }

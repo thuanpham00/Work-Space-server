@@ -23,6 +23,7 @@ export interface ChannelDM {
     gender: string
     fullName: string
   }
+  config: ChannelConfig
 }
 
 export interface Channel {
@@ -46,4 +47,13 @@ export interface MemberChannel {
   displayName: string
   avatar: string
   status: string
+}
+
+export interface ChannelConfig {
+  id: string
+  channelId: string
+  backgroundUrl: string
+  accent: string
+  createdAt: string
+  updatedAt: string
 }

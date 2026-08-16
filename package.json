@@ -13,7 +13,8 @@
     "prettier:fix": "prettier --write .",
     "seed:users": "tsx src/utils/seed-users.ts",
     "update:privacy": "tsx src/utils/update-privacy-settings.ts",
-    "migrate:default-category": "tsx src/utils/migrate-default-category-channel.js"
+    "migrate:default-category": "tsx src/utils/migrate-default-category-channel.js",
+    "migrate:channel-configs": "tsx src/utils/createChannelConfigs.js"
   },
   "keywords": [],
   "author": "",

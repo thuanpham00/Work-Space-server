@@ -1,4 +1,4 @@
-import { Server } from 'socket.io'
+import { Server, Socket } from 'socket.io'
 import { Server as ServerHttp } from 'http'
 import { verifyAccessToken } from '~/utils/utils'
 import { TokenPayload } from '~/models/responses/user.responses'
@@ -6,6 +6,9 @@ import databaseServices from '~/services/database.services'
 import { MessageType } from '~/constants/enum'
 import { addSocket, getSocketIds, removeSocket } from '~/socket/online-users'
 import { Media } from '~/models/responses/media.response'
+import { verifyToken } from '~/utils/jwt'
+import { envConfig } from '~/utils/config'
+import userService from '~/services/user.services'
 
 /**
  * socket = Kết nối cá nhân của 1 user. (Nên dùng socket.join là cầm tay duy nhất user đó dắt vào phòng).
@@ -87,6 +90,50 @@ const emitUnreadChannel = async (
   }
 }
 
+const handleRefreshToken = async (refresh_token: string, socket: Socket, next: (err?: any) => void) => {
+  try {
+    const [decode_refreshToken, findToken] = await Promise.all([
+      verifyToken({ token: refresh_token, privateKey: envConfig.secret_key_refresh_token }),
+      databaseServices.prisma.refreshToken.findUnique({
+        where: { token: refresh_token }
+      })
+    ])
+
+    if (findToken) {
+      // Tạo tokens mới
+      const { accessToken, refreshToken: newRefreshToken } = await userService.refreshToken({
+        token: refresh_token,
+        user_id: decode_refreshToken.user_id,
+        exp: decode_refreshToken.exp
+      })
+      // Cập nhật socket auth với token mới
+      socket.handshake.auth.access_token = accessToken
+      socket.handshake.auth.refresh_token = newRefreshToken
+
+      console.log('access_token', accessToken)
+      console.log('refresh_token', newRefreshToken)
+
+      // Gửi tokens mới về client
+      socket.emit('token_refresh', {
+        accessToken,
+        refreshToken: newRefreshToken
+      })
+      next() // Cho phép event tiếp tục với token mới
+      return
+    }
+  } catch (error) {
+    // nếu refreshToken hết hạn thì bắn lên client cho logout
+    // sau đó disconnect
+    socket.emit('auth_error', {
+      message: 'Unauthorized',
+      name: 'UnauthorizedError',
+      code: 401,
+      type: 'refresh_token_expired'
+    })
+    next(new Error('Unauthorized'))
+  }
+}
+
 export const initialSocket = (httpSocket: ServerHttp) => {
   const io = new Server(httpSocket, {
     cors: {
@@ -99,6 +146,12 @@ export const initialSocket = (httpSocket: ServerHttp) => {
   // chạy mỗi khi client bắt đầu handshake/kết nối tới server (ngay trước khi sự kiện connection xảy ra). - chạy 1 lần cho 1 lần kết nối
   io.use(async (socket, next) => {
     try {
+      const cookieHeader = socket.handshake.headers.cookie
+      const refresh_token = cookieHeader
+        ?.split('; ')
+        .find((row) => row.startsWith('refresh_token='))
+        ?.split('=')[1]
+
       const { Authorization } = socket.handshake.auth
       if (!Authorization || typeof Authorization !== 'string') return next(new Error('Unauthorized'))
       const parts = Authorization.split(' ')
@@ -111,6 +164,7 @@ export const initialSocket = (httpSocket: ServerHttp) => {
 
       socket.handshake.auth.decode_authorization = decode_authorization
       socket.handshake.auth.access_token = access_token
+      socket.handshake.auth.refresh_token = refresh_token
       next()
     } catch (error) {
       next({
@@ -134,8 +188,21 @@ export const initialSocket = (httpSocket: ServerHttp) => {
       try {
         const { access_token } = socket.handshake.auth
         if (!access_token) return next(new Error('Unauthorized'))
-        await verifyAccessToken(access_token)
-        next()
+        try {
+          await verifyAccessToken(access_token)
+          next()
+        } catch (error: any) {
+          if (error.message === 'AccessToken expired') {
+            const refresh_token = socket.handshake.auth.refresh_token
+
+            if (refresh_token) {
+              await handleRefreshToken(refresh_token, socket, next)
+            } else {
+              next(new Error('Unauthorized'))
+            }
+          }
+          next(new Error('Unauthorized'))
+        }
       } catch (error) {
         next(new Error('Unauthorized')) // nếu lỗi nó bắt xuống sự kiện error bên dưới
       }

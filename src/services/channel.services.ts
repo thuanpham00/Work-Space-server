@@ -13,7 +13,8 @@ class ChannelService {
           include: {
             user: true
           }
-        }
+        },
+        config: true
       }
     })
 
