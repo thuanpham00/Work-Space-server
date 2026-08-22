@@ -121,21 +121,34 @@ class UserService {
   }
 
   async refreshToken({ token, user_id, exp }: { token: string; user_id: string; exp: number }) {
+    const existingToken = await databaseServices.prisma.refreshToken.findFirst({
+      where: {
+        userId: BigInt(user_id),
+        token
+      }
+    })
+
+    if (existingToken) {
+      await databaseServices.prisma.refreshToken.deleteMany({
+        where: { id: existingToken.id }
+      })
+    }
+
     const [accessToken, refreshTokenNew] = await Promise.all([
       this.signAccessToken({ user_id }),
-      this.signRefreshToken({ user_id, exp }),
-      databaseServices.prisma.refreshToken.delete({
-        where: {
-          userId: BigInt(user_id),
-          token: token
-        }
-      })
+      this.signRefreshToken({ user_id, exp })
     ])
 
     const decodeRefreshToken = await this.decodeRefreshToken(refreshTokenNew)
 
-    await databaseServices.prisma.refreshToken.create({
-      data: {
+    await databaseServices.prisma.refreshToken.upsert({
+      where: { token: refreshTokenNew },
+      update: {
+        userId: BigInt(user_id),
+        exp: decodeRefreshToken.exp,
+        iat: decodeRefreshToken.iat
+      },
+      create: {
         token: refreshTokenNew,
         userId: BigInt(user_id),
         exp: decodeRefreshToken.exp,

@@ -53,6 +53,7 @@ export interface ChannelConfig {
   id: string
   channelId: string
   backgroundUrl: string
+  backgroundColor: string
   accent: string
   createdAt: string
   updatedAt: string

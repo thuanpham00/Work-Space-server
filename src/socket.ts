@@ -110,9 +110,6 @@ const handleRefreshToken = async (refresh_token: string, socket: Socket, next: (
       socket.handshake.auth.access_token = accessToken
       socket.handshake.auth.refresh_token = newRefreshToken
 
-      console.log('access_token', accessToken)
-      console.log('refresh_token', newRefreshToken)
-
       // Gửi tokens mới về client
       socket.emit('token_refresh', {
         accessToken,
@@ -124,11 +121,13 @@ const handleRefreshToken = async (refresh_token: string, socket: Socket, next: (
   } catch (error) {
     // nếu refreshToken hết hạn thì bắn lên client cho logout
     // sau đó disconnect
+    console.log('refresh_token expired')
     socket.emit('auth_error', {
       message: 'Unauthorized',
       name: 'UnauthorizedError',
       code: 401,
-      type: 'refresh_token_expired'
+      type: 'refresh_token_expired',
+      refreshToken: refresh_token
     })
     next(new Error('Unauthorized'))
   }
