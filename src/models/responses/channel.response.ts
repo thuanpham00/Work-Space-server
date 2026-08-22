@@ -1,3 +1,5 @@
+import { User } from '~/models/responses/user.responses'
+
 export interface ChannelDM {
   id: string
   workspaceId: string
@@ -24,6 +26,7 @@ export interface ChannelDM {
     fullName: string
   }
   config: ChannelConfig
+  nicknames: ChannelMemberNickname[]
 }
 
 export interface Channel {
@@ -56,5 +59,14 @@ export interface ChannelConfig {
   backgroundColor: string
   accent: string
   createdAt: string
+  updatedAt: string
+}
+
+export interface ChannelMemberNickname {
+  id: string
+  channelId: string
+  userId: string
+  user: User
+  nickname: string
   updatedAt: string
 }

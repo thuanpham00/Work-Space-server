@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Response } from 'express'
-import { ChannelType } from '~/constants/enum'
 import { ErrorWithStatus } from '~/constants/errors'
 import httpStatus from '~/constants/httpStatus'
 import { getUploadedFile } from '~/middlewares/upload.middlewares'
@@ -11,51 +10,18 @@ import { ApiResponse, TokenPayload } from '~/models/responses/user.responses'
 import { CreateChannelBody } from '~/models/schemas/channel.schema'
 import { QueryBase } from '~/models/schemas/query.schema'
 import channelServices from '~/services/channel.services'
-import databaseServices from '~/services/database.services'
 import fs from 'fs'
 import r2Services from '~/services/r2.services'
+import { UpdateChannelConfigBody, UpdateChannelNicknameBody } from '~/models/requests/channel.request'
+import { io, Socket_Room } from '~/socket'
 
 export const createChannelController = async (req: AuthenticatedRequest, res: Response) => {
-  const { categoryId, name, description, type, isPrivate } = req.body as CreateChannelBody
-
-  const category = await databaseServices.prisma.categoryChannel.findUnique({
-    where: {
-      id: BigInt(categoryId)
-    }
-  })
-
-  if (!category) {
-    throw new ErrorWithStatus({
-      message: 'Category không tồn tại',
-      status: httpStatus.NOTFOUND
-    })
-  }
-
-  const channel = await databaseServices.prisma.channel.create({
-    data: {
-      workspaceId: category.workspaceId,
-      categoryId: category.id,
-      name,
-      description: description ?? null,
-      type: type.toUpperCase() as ChannelType,
-      isPrivate: isPrivate ?? false
-    }
-  })
+  const channel = await channelServices.createChannel(req.body as CreateChannelBody)
 
   const response: ApiResponse<{ channel: Channel }> = {
     message: 'Tạo channel thành công',
     data: {
-      channel: {
-        id: channel.id.toString(),
-        workspaceId: channel.workspaceId ? channel.workspaceId.toString() : null,
-        categoryId: channel.categoryId ? channel.categoryId.toString() : null,
-        name: channel.name,
-        description: channel.description,
-        type: channel.type,
-        isPrivate: channel.isPrivate,
-        createdAt: channel.createdAt.toISOString(),
-        updatedAt: channel.updatedAt.toISOString()
-      }
+      channel
     }
   }
 
@@ -131,4 +97,46 @@ export const uploadImageController = async (req: AuthenticatedRequest, res: Resp
   }
 
   res.status(httpStatus.CREATED).json(response)
+}
+
+export const updateChannelSettingsController = async (req: AuthenticatedRequest, res: Response) => {
+  const { channelId } = req.params as { channelId: string }
+  const { backgroundColor, backgroundUrl, accent } = req.body as UpdateChannelConfigBody
+
+  const payload = {
+    backgroundColor: backgroundColor,
+    backgroundUrl: backgroundUrl,
+    accent: accent
+  }
+
+  const { channelConfig } = await channelServices.updateChannelConfig(BigInt(channelId), payload)
+
+  io?.to(Socket_Room.channel(channelId.toString())).emit('channel_settings_updated', {
+    channelId
+  })
+
+  res.json({
+    message: 'Cập nhật cấu hình channel thành công',
+    data: {
+      channelConfig
+    }
+  })
+}
+
+export const updateChannelNicknameController = async (req: AuthenticatedRequest, res: Response) => {
+  const { channelId } = req.params as { channelId: string }
+  const { nicknames } = req.body as UpdateChannelNicknameBody
+
+  const { channelNicknames } = await channelServices.updateChannelNickname(BigInt(channelId), nicknames)
+
+  io?.to(Socket_Room.channel(channelId.toString())).emit('channel_settings_updated', {
+    channelId
+  })
+
+  res.json({
+    message: 'Cập nhật nickname channel thành công',
+    data: {
+      channelNicknames
+    }
+  })
 }

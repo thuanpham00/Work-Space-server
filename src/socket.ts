@@ -15,7 +15,9 @@ import userService from '~/services/user.services'
    io = Máy chủ tổng (Server). (Nên dùng io.to(...).emit(...) là lệnh từ máy chủ tổng phát thanh xuống cho tất cả những user nào đang có mặt trong cái phòng đó).
  */
 
-const Socket_Room = {
+export let io: Server | null = null
+
+export const Socket_Room = {
   user: (userId: string) => `user:${userId}`,
   workspace: (workspaceId: string) => `workspace:${workspaceId}`,
   channel: (channelId: string) => `channel:${channelId}`
@@ -134,7 +136,7 @@ const handleRefreshToken = async (refresh_token: string, socket: Socket, next: (
 }
 
 export const initialSocket = (httpSocket: ServerHttp) => {
-  const io = new Server(httpSocket, {
+  io = new Server(httpSocket, {
     cors: {
       origin: ['http://localhost:5173'], // url của frontend
       methods: ['GET', 'POST', 'PUT', 'DELETE']
@@ -282,9 +284,9 @@ export const initialSocket = (httpSocket: ServerHttp) => {
         }
       }
 
-      io.to(Socket_Room.channel(channelId.toString())).emit('receive_message', response)
+      io?.to(Socket_Room.channel(channelId.toString())).emit('receive_message', response)
 
-      await emitUnreadChannel(io, {
+      await emitUnreadChannel(io as Server, {
         channelId,
         senderId: userId,
         latestMessageId: Number(res.id)
@@ -319,9 +321,9 @@ export const initialSocket = (httpSocket: ServerHttp) => {
         }
       })
 
-      io.to(data.channel_id.toString()).emit('receive_message', res)
+      io?.to(data.channel_id.toString()).emit('receive_message', res)
 
-      await emitUnreadChannel(io, {
+      await emitUnreadChannel(io as Server, {
         channelId,
         senderId: userId,
         latestMessageId: Number(res.id)

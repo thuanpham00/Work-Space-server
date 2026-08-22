@@ -4,13 +4,19 @@ import {
   getChannelDetailController,
   getChannelMessagesController,
   getDirectMessageChannelsController,
+  updateChannelNicknameController,
+  updateChannelSettingsController,
   uploadImageController
 } from '~/controllers/channel.controller'
 import { accessTokenValidator } from '~/middlewares/auth.middlewares'
 import { asyncHandler, validate, validateParams, validateQuery } from '~/middlewares/errorHandler.middlewares'
 import { queryBase } from '~/models/schemas/query.schema'
 import { channelIdSchema, userIdParamSchema } from '~/models/schemas/user.schemas'
-import { createChannelSchema } from '../models/schemas/channel.schema'
+import {
+  createChannelSchema,
+  updateChannelConfigSchema,
+  updateChannelNicknameSchema
+} from '../models/schemas/channel.schema'
 import { uploadMiddleware } from '~/middlewares/upload.middlewares'
 const router = Router()
 
@@ -43,6 +49,22 @@ router.get(
   accessTokenValidator,
   validateParams(userIdParamSchema),
   asyncHandler(getDirectMessageChannelsController)
+)
+
+router.patch(
+  '/:channelId/settings',
+  accessTokenValidator,
+  validateParams(channelIdSchema),
+  validate(updateChannelConfigSchema),
+  asyncHandler(updateChannelSettingsController)
+)
+
+router.patch(
+  '/:channelId/nicknames',
+  accessTokenValidator,
+  validateParams(channelIdSchema),
+  validate(updateChannelNicknameSchema),
+  asyncHandler(updateChannelNicknameController)
 )
 
 export default router

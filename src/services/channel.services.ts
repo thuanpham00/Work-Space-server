@@ -1,7 +1,53 @@
 import { ChannelType } from '~/constants/enum'
+import { ErrorWithStatus } from '~/constants/errors'
+import httpStatus from '~/constants/httpStatus'
+import {
+  ChannelNicknameBody,
+  UpdateChannelConfigBody,
+  UpdateChannelNicknameBody
+} from '~/models/requests/channel.request'
+import { CreateChannelBody } from '~/models/schemas/channel.schema'
 import databaseServices from './database.services'
 
 class ChannelService {
+  async createChannel({ categoryId, name, description, type, isPrivate }: CreateChannelBody) {
+    const category = await databaseServices.prisma.categoryChannel.findUnique({
+      where: {
+        id: BigInt(categoryId)
+      }
+    })
+
+    if (!category) {
+      throw new ErrorWithStatus({
+        message: 'Category không tồn tại',
+        status: httpStatus.NOTFOUND
+      })
+    }
+
+    const channel = await databaseServices.prisma.channel.create({
+      data: {
+        workspaceId: category.workspaceId,
+        categoryId: category.id,
+        name,
+        description: description ?? null,
+        type: type.toUpperCase() as ChannelType,
+        isPrivate: isPrivate ?? false
+      }
+    })
+
+    return {
+      id: channel.id.toString(),
+      workspaceId: channel.workspaceId ? channel.workspaceId.toString() : null,
+      categoryId: channel.categoryId ? channel.categoryId.toString() : null,
+      name: channel.name,
+      description: channel.description,
+      type: channel.type,
+      isPrivate: channel.isPrivate,
+      createdAt: channel.createdAt.toISOString(),
+      updatedAt: channel.updatedAt.toISOString()
+    }
+  }
+
   async getDirectMessageChannelDetail(idUser: bigint, idReceiver: bigint) {
     const channel = await databaseServices.prisma.channel.findFirst({
       where: {
@@ -14,13 +60,18 @@ class ChannelService {
             user: true
           }
         },
-        config: true
+        config: true,
+        nicknames: {
+          include: {
+            user: true
+          }
+        }
       }
     })
 
     if (!channel) return null
 
-    const { members, ...restChannel } = channel
+    const { members, nicknames, ...restChannel } = channel
 
     return {
       ...restChannel,
@@ -34,7 +85,13 @@ class ChannelService {
               ...member.user,
               id: member.user.id.toString()
             }
-          })[0] || null
+          })[0] || null,
+      nicknames: nicknames.map((nickname) => {
+        return {
+          ...nickname,
+          id: nickname.user.id.toString()
+        }
+      })
     }
   }
 
@@ -110,6 +167,53 @@ class ChannelService {
         displayName: m.user.displayName,
         avatar: m.user.avatar,
         status: m.user.status
+      }))
+    }
+  }
+
+  async updateChannelConfig(channelId: bigint, config: UpdateChannelConfigBody) {
+    const channelConfig = await databaseServices.prisma.channelConfig.update({
+      where: {
+        channelId: channelId
+      },
+      data: {
+        backgroundColor: config.backgroundColor,
+        backgroundUrl: config.backgroundUrl,
+        accent: config.accent
+      }
+    })
+
+    return {
+      channelConfig: {
+        ...channelConfig,
+        id: channelConfig.id.toString(),
+        channelId: channelConfig.channelId.toString()
+      }
+    }
+  }
+
+  async updateChannelNickname(channelId: bigint, nicknames: ChannelNicknameBody[]) {
+    const updatedNicknames = await Promise.all(
+      nicknames.map(async (nickname) => {
+        return await databaseServices.prisma.channelMemberNickname.update({
+          where: {
+            channelId_userId: {
+              channelId,
+              userId: BigInt(nickname.userId)
+            }
+          },
+          data: {
+            nickname: nickname.nickname,
+            updatedAt: new Date()
+          }
+        })
+      })
+    )
+
+    return {
+      channelNicknames: updatedNicknames.map((nickname) => ({
+        ...nickname,
+        id: nickname.id.toString()
       }))
     }
   }

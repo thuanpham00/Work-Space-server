@@ -1,3 +1,4 @@
+import { configChannel } from '~/constants/channel'
 import { ChannelType, FriendStatus, FriendStatusRequest } from '~/constants/enum'
 import { ErrorWithStatus } from '~/constants/errors'
 import httpStatus from '~/constants/httpStatus'
@@ -178,6 +179,25 @@ class FriendService {
         type: ChannelType.DM,
         description: 'Phòng chat riêng tư',
         isPrivate: true,
+        config: {
+          create: {
+            accent: configChannel.defaultAccent,
+            backgroundUrl: '',
+            backgroundColor: configChannel.defaultBackgroundColor
+          }
+        }, // tạo config cho channel
+        nicknames: {
+          create: [
+            {
+              userId: userId,
+              nickname: ''
+            },
+            {
+              userId: friendId,
+              nickname: ''
+            }
+          ]
+        }, // tạo nicknames cho channel
         members: {
           create: [
             {
@@ -189,7 +209,7 @@ class FriendService {
               joinedAt: new Date()
             }
           ]
-        }
+        } // tạo members cho channel
       }
     })
   }
