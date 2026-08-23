@@ -61,6 +61,87 @@ class R2Service {
       type: 'image/' + meta.format
     }
   }
+
+  private getFileExtension(originalFilename?: string | null, mimetype?: string | null) {
+    if (originalFilename) {
+      const parts = originalFilename.split('.')
+      if (parts.length > 1) {
+        const ext = parts.pop()?.toLowerCase()
+        if (ext) return ext
+      }
+    }
+
+    if (mimetype) {
+      const mimeToExt: Record<string, string> = {
+        'application/pdf': 'pdf',
+        'application/zip': 'zip',
+        'application/x-zip-compressed': 'zip',
+        'text/plain': 'txt',
+        'application/msword': 'doc',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+        'application/vnd.ms-excel': 'xls',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+        'video/mp4': 'mp4',
+        'audio/mpeg': 'mp3'
+      }
+
+      if (mimeToExt[mimetype]) return mimeToExt[mimetype]
+
+      const [, subtype] = mimetype.split('/')
+      if (subtype) return subtype.split('+')[0]
+    }
+
+    return 'bin'
+  }
+
+  async uploadFileMessage(
+    buffer: Buffer,
+    link: string,
+    file: { originalFilename?: string | null; mimetype?: string | null }
+  ): Promise<Media> {
+    let width = 0
+    let height = 0
+    let contentType = file.mimetype || 'application/octet-stream'
+    let ext = this.getFileExtension(file.originalFilename, file.mimetype)
+
+    try {
+      const meta = await sharp(buffer).metadata()
+      if (meta.format) {
+        ext = meta.format === 'jpeg' ? 'jpg' : meta.format
+        contentType = `image/${meta.format}`
+        width = meta.width || 0
+        height = meta.height || 0
+      }
+    } catch {
+      // Không phải ảnh hoặc sharp không đọc được -> upload như file thường
+    }
+
+    const fileName = `${uuidv4()}.${ext}`
+    const key = `${link}/${fileName}`
+
+    await this.client.send(
+      new PutObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+        Body: buffer,
+        ContentType: contentType,
+        CacheControl: 'public, max-age=31536000'
+      })
+    )
+
+    const baseLink = this.publicLink.startsWith('http') ? this.publicLink : `https://${this.publicLink}`
+
+    return {
+      id: uuidv4(),
+      url: `${baseLink}/${key}`,
+      key,
+      name: file.originalFilename || fileName,
+      width,
+      height,
+      size: buffer.length,
+      type: contentType
+    }
+  }
 }
 
 export default new R2Service()

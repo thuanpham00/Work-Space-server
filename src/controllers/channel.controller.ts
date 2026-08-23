@@ -62,6 +62,25 @@ export const getChannelMessagesController = async (req: AuthenticatedRequest, re
   res.json(response)
 }
 
+export const getChannelAttachmentsController = async (req: AuthenticatedRequest, res: Response) => {
+  const { channelId } = req.params as { channelId: string }
+  const { page, limit } = req.query as QueryBase
+
+  const { attachments, total } = await channelServices.getAttachmentsForChannel(BigInt(channelId), Number(limit), Number(page))
+
+  const response: ApiResponse<{ attachments: any[]; total_page: number; limit: number; page: number }> = {
+    message: 'Lấy danh sách attachments thành công',
+    data: {
+      attachments: attachments as any,
+      total_page: Math.ceil(total / Number(limit)),
+      limit: Number(limit),
+      page: Number(page)
+    }
+  }
+
+  res.json(response)
+}
+
 export const getChannelDetailController = async (req: AuthenticatedRequest, res: Response) => {
   const { channelId } = req.params as { channelId: string }
 
@@ -82,17 +101,19 @@ export const getChannelDetailController = async (req: AuthenticatedRequest, res:
   })
 }
 
-export const uploadImageController = async (req: AuthenticatedRequest, res: Response) => {
-  const imageFile = getUploadedFile(req, 'file')
-
-  const buffer = fs.readFileSync(imageFile.filepath)
+export const uploadFileMessageController = async (req: AuthenticatedRequest, res: Response) => {
+  const uploadedFile = getUploadedFile(req, 'file')
+  const buffer = fs.readFileSync(uploadedFile.filepath)
   const channelId = req.params.id
   const link = `channel/${channelId}`
 
-  const result = await r2Services.uploadImage(buffer, link)
+  const result = await r2Services.uploadFileMessage(buffer, link, {
+    originalFilename: uploadedFile.originalFilename,
+    mimetype: uploadedFile.mimetype
+  })
 
   const response: ApiResponse<typeof result> = {
-    message: 'Upload ảnh thành công',
+    message: 'Upload file thành công',
     data: result
   }
 
@@ -129,7 +150,7 @@ export const updateChannelNicknameController = async (req: AuthenticatedRequest,
 
   const { channelNicknames } = await channelServices.updateChannelNickname(BigInt(channelId), nicknames)
 
-  io?.to(Socket_Room.channel(channelId.toString())).emit('channel_settings_updated', {
+  io?.to(Socket_Room.channel(channelId.toString())).emit('channel_nicknames_updated', {
     channelId
   })
 

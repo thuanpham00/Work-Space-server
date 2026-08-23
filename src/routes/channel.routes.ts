@@ -1,12 +1,13 @@
 import { Router } from 'express'
 import {
   createChannelController,
+  getChannelAttachmentsController,
   getChannelDetailController,
   getChannelMessagesController,
   getDirectMessageChannelsController,
   updateChannelNicknameController,
   updateChannelSettingsController,
-  uploadImageController
+  uploadFileMessageController
 } from '~/controllers/channel.controller'
 import { accessTokenValidator } from '~/middlewares/auth.middlewares'
 import { asyncHandler, validate, validateParams, validateQuery } from '~/middlewares/errorHandler.middlewares'
@@ -17,14 +18,14 @@ import {
   updateChannelConfigSchema,
   updateChannelNicknameSchema
 } from '../models/schemas/channel.schema'
-import { uploadMiddleware } from '~/middlewares/upload.middlewares'
+import { uploadMessageMiddleware, uploadMiddleware } from '~/middlewares/upload.middlewares'
 const router = Router()
 
 // tạo channel
 router.post('/', accessTokenValidator, validate(createChannelSchema), asyncHandler(createChannelController))
 
 // upload ảnh
-router.post('/:id/upload', accessTokenValidator, uploadMiddleware(), asyncHandler(uploadImageController))
+router.post('/:id/upload', accessTokenValidator, uploadMessageMiddleware(), asyncHandler(uploadFileMessageController))
 
 // lấy chi tiết channel dựa trên channelId
 router.get(
@@ -41,6 +42,16 @@ router.get(
   validateParams(channelIdSchema),
   validateQuery(queryBase),
   asyncHandler(getChannelMessagesController)
+)
+
+
+// lấy tin nhắn của phòng chat dựa trên channelId
+router.get(
+  '/attachments/:channelId',
+  accessTokenValidator,
+  validateParams(channelIdSchema),
+  validateQuery(queryBase),
+  asyncHandler(getChannelAttachmentsController)
 )
 
 // lấy thông tin phòng chat channel DM của dựa tren userId (receiver)

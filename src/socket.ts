@@ -282,6 +282,8 @@ export const initialSocket = (httpSocket: ServerHttp) => {
           ...res,
           attachments: filesRes
         }
+
+        io?.to(Socket_Room.channel(channelId.toString())).emit('receive_attachments', filesRes) // đồng bộ attachments lên client
       }
 
       io?.to(Socket_Room.channel(channelId.toString())).emit('receive_message', response)
@@ -322,6 +324,7 @@ export const initialSocket = (httpSocket: ServerHttp) => {
       })
 
       io?.to(data.channel_id.toString()).emit('receive_message', res)
+      io?.to(data.channel_id.toString()).emit('receive_attachments', res.attachments) // đồng bộ attachments lên client
 
       await emitUnreadChannel(io as Server, {
         channelId,

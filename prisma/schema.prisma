@@ -34,7 +34,7 @@ enum ChannelType {
 
 enum MessageType {
   TEXT  @map("text")
-  FILE  @map("file")
+  CONFIG  @map("config")
   GIF   @map("gif")
 
   @@map("message_type")

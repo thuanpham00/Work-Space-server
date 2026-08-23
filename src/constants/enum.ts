@@ -29,9 +29,7 @@ export enum UserStatus {
 
 export enum MessageType {
   TEXT = 'TEXT',
-  IMAGE = 'IMAGE',
-  FILE = 'FILE',
-  EMOJI = 'EMOJI',
+  CONFIG = 'CONFIG',
   GIF = 'GIF'
 }
 

@@ -50,11 +50,46 @@ export const uploadMiddleware = (options?: FormidableOptions) => {
   }
 }
 
+export const uploadMessageMiddleware = (options?: FormidableOptions) => {
+  return async (req: Request, _res: Response, next: NextFunction) => {
+    const form = formidable({
+      maxFileSize: 4 * 1024 * 1024,
+      ...options
+    })
+
+    try {
+      const [, files] = (await form.parse(req)) as [unknown, Record<string, FormidableFile[] | undefined>]
+      const flatFiles: UploadedFile[] = []
+      for (const fieldName of Object.keys(files)) {
+        const arr = files[fieldName]
+        if (!arr) continue
+        for (const file of arr) {
+          flatFiles.push({
+            ...file,
+            mimetype: file.mimetype ?? null,
+            originalFilename: file.originalFilename ?? null
+          })
+        }
+      }
+      ;(req as Request & { uploadedFiles?: UploadedFile[] }).uploadedFiles = flatFiles
+      next()
+    } catch (error) {
+      next(
+        new ErrorWithStatus({
+          message: error instanceof Error ? error.message : 'Upload file thất bại',
+          status: httpStatus.BAD_REQUESTED
+        })
+      )
+    }
+  }
+}
+
 /**
  * Lấy file đầu tiên theo tên field. Throw nếu không có.
  */
 export const getUploadedFile = (req: Request, fieldName: string): UploadedFile => {
   const files = (req as Request & { uploadedFiles?: UploadedFile[] }).uploadedFiles ?? []
+  console.log(files)
   const matched = files.find((f) => f.originalFilename !== null || f.size > 0)
   const file = matched ?? files[0]
 

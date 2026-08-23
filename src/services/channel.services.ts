@@ -124,6 +124,47 @@ class ChannelService {
     }
   }
 
+  async getAttachmentsForChannel(channelId: bigint, limit: number, page: number) {
+    // lấy danh sách tin nhắn thuộc về channelId từ đó lấy danh sách attachments
+    const messages = await databaseServices.prisma.message.findMany({
+      where: {
+        channelId
+      },
+      select: {
+        id: true
+      }
+    })
+
+    const messageIds = messages.map((message) => message.id)
+
+    const [attachments, total] = await Promise.all([
+      databaseServices.prisma.attachment.findMany({
+        where: {
+          messageId: {
+            in: messageIds
+          }
+        },
+        take: limit,
+        skip: (page - 1) * limit,
+        orderBy: {
+          createdAt: 'desc'
+        }
+      }),
+      databaseServices.prisma.attachment.count({
+        where: {
+          messageId: {
+            in: messageIds
+          }
+        }
+      })
+    ])
+
+    return {
+      attachments,
+      total
+    }
+  }
+
   async getChannelDetail(channelId: bigint) {
     const channel = await databaseServices.prisma.channel.findUnique({
       where: {
