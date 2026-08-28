@@ -18,7 +18,7 @@ import {
   updateChannelConfigSchema,
   updateChannelNicknameSchema
 } from '../models/schemas/channel.schema'
-import { uploadMessageMiddleware, uploadMiddleware } from '~/middlewares/upload.middlewares'
+import { uploadMessageMiddleware } from '~/middlewares/upload.middlewares'
 const router = Router()
 
 // tạo channel
@@ -43,7 +43,6 @@ router.get(
   validateQuery(queryBase),
   asyncHandler(getChannelMessagesController)
 )
-
 
 // lấy tin nhắn của phòng chat dựa trên channelId
 router.get(

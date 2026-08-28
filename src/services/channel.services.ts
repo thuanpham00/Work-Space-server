@@ -1,11 +1,8 @@
+import { configChannel } from '~/constants/channel'
 import { ChannelType } from '~/constants/enum'
 import { ErrorWithStatus } from '~/constants/errors'
 import httpStatus from '~/constants/httpStatus'
-import {
-  ChannelNicknameBody,
-  UpdateChannelConfigBody,
-  UpdateChannelNicknameBody
-} from '~/models/requests/channel.request'
+import { ChannelNicknameBody, UpdateChannelConfigBody } from '~/models/requests/channel.request'
 import { CreateChannelBody } from '~/models/schemas/channel.schema'
 import databaseServices from './database.services'
 
@@ -14,6 +11,18 @@ class ChannelService {
     const category = await databaseServices.prisma.categoryChannel.findUnique({
       where: {
         id: BigInt(categoryId)
+      },
+      include: {
+        workspace: {
+          select: {
+            ownerId: true,
+            members: {
+              select: {
+                userId: true
+              }
+            }
+          }
+        }
       }
     })
 
@@ -24,6 +33,18 @@ class ChannelService {
       })
     }
 
+    const memberUserIds = new Set<bigint>()
+    category.workspace?.members.forEach((member) => memberUserIds.add(member.userId))
+
+    if (category.workspace?.ownerId) {
+      memberUserIds.add(category.workspace.ownerId)
+    }
+
+    const nicknamesData = Array.from(memberUserIds).map((userId) => ({
+      userId,
+      nickname: ''
+    }))
+
     const channel = await databaseServices.prisma.channel.create({
       data: {
         workspaceId: category.workspaceId,
@@ -31,7 +52,19 @@ class ChannelService {
         name,
         description: description ?? null,
         type: type.toUpperCase() as ChannelType,
-        isPrivate: isPrivate ?? false
+        isPrivate: isPrivate ?? false,
+        config: {
+          create: {
+            accent: configChannel.defaultAccent,
+            backgroundUrl: '',
+            backgroundColor: configChannel.defaultBackgroundColor
+          }
+        },
+        ...(nicknamesData.length > 0 && {
+          nicknames: {
+            create: nicknamesData
+          }
+        })
       }
     })
 
@@ -184,6 +217,12 @@ class ChannelService {
               }
             }
           }
+        },
+        config: true,
+        nicknames: {
+          include: {
+            user: true
+          }
         }
       }
     })
@@ -208,7 +247,22 @@ class ChannelService {
         displayName: m.user.displayName,
         avatar: m.user.avatar,
         status: m.user.status
-      }))
+      })),
+      config: channel.config
+        ? {
+            ...channel.config,
+            id: channel.config.id.toString(),
+            channelId: channel.config.channelId.toString()
+          }
+        : null,
+      nicknames: channel.nicknames
+        ? channel.nicknames.map((nickname) => {
+            return {
+              ...nickname,
+              id: nickname.user.id.toString()
+            }
+          })
+        : null
     }
   }
 

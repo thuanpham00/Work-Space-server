@@ -1,3 +1,4 @@
+/* eslint-disable no-useless-assignment */
 import { Server, Socket } from 'socket.io'
 import { Server as ServerHttp } from 'http'
 import { verifyAccessToken } from '~/utils/utils'
@@ -123,7 +124,6 @@ const handleRefreshToken = async (refresh_token: string, socket: Socket, next: (
   } catch (error) {
     // nếu refreshToken hết hạn thì bắn lên client cho logout
     // sau đó disconnect
-    console.log('refresh_token expired')
     socket.emit('auth_error', {
       message: 'Unauthorized',
       name: 'UnauthorizedError',
