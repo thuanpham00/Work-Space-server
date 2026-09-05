@@ -3,6 +3,7 @@ import {
   acceptFriendController,
   addFriendController,
   getAllFriendsController,
+  getUnreadFriendsController,
   rejectFriendController
 } from '~/controllers/friend.controller'
 import { accessTokenValidator } from '~/middlewares/auth.middlewares'
@@ -13,6 +14,9 @@ const router = Router()
 
 // lấy danh sách bạn bè dựa trên trạng thái (pending, accepted, tất cả)
 router.get('/', accessTokenValidator, validateQuery(friendSchema), asyncHandler(getAllFriendsController))
+
+// lấy trạng thái unread của bạn bè đối với userId
+router.get('/unread', accessTokenValidator, asyncHandler(getUnreadFriendsController))
 
 // thêm bạn bè
 router.post('/add', accessTokenValidator, validate(addFriendSchema), asyncHandler(addFriendController))

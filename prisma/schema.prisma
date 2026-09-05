@@ -24,6 +24,13 @@ enum WorkspaceMemberRole {
   @@map("workspace_member_role")
 }
 
+enum ChannelMemberRole {
+  ADMIN  @map("admin")
+  MEMBER @map("member")
+
+  @@map("channel_member_role")
+}
+
 enum ChannelType {
   TEXT  @map("text")
   VOICE @map("voice")
@@ -197,9 +204,10 @@ model Channel {
 }
 
 model ChannelMember {
-  channelId BigInt    @map("channel_id") 
-  userId    BigInt    @map("user_id") 
-  joinedAt  DateTime? @map("joined_at")
+  channelId BigInt            @map("channel_id") 
+  userId    BigInt            @map("user_id") 
+  role      ChannelMemberRole @default(MEMBER)
+  joinedAt  DateTime?         @map("joined_at")
 
   channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade, map: "channel_members_channel_id_fkey")
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "channel_members_user_id_fkey")
@@ -296,7 +304,6 @@ model ChannelConfig {
   id            BigInt   @id @default(autoincrement())
   channelId     BigInt   @unique @map("channel_id")
   backgroundUrl String?  @map("background_url") @db.VarChar(500)
-  backgroundColor String?  @map("background_color") @db.VarChar(20)
   accent        String?  @db.VarChar(20)
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")

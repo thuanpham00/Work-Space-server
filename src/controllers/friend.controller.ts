@@ -24,6 +24,18 @@ export const getAllFriendsController = async (req: AuthenticatedRequest, res: Re
   res.json(response)
 }
 
+export const getUnreadFriendsController = async (req: AuthenticatedRequest, res: Response) => {
+  const { user_id } = req.decode_authorization as TokenPayload
+  const unreadFriends = await friendServices.getUnreadFriends(BigInt(user_id))
+
+  res.json({
+    message: 'Lấy trạng thái unread của bạn bè thành công',
+    data: {
+      unreadFriends
+    }
+  })
+}
+
 export const addFriendController = async (req: AuthenticatedRequest, res: Response) => {
   const { user_id } = req.decode_authorization as TokenPayload
   const { friendId } = req.body as { friendId: string }

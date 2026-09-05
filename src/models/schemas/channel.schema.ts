@@ -17,10 +17,8 @@ export const updateChannelConfigSchema = z.object({
 })
 
 export const updateChannelNicknameSchema = z.object({
-  nicknames: z.array(
-    z.object({
-      userId: z.string().min(1, 'ID user không được để trống'),
-      nickname: z.string().trim().min(1, 'Nickname không được để trống').max(100, 'Nickname không được quá 100 ký tự')
-    })
-  )
+  nickname: z.object({
+    userId: z.string().min(1, 'ID user không được để trống'),
+    nickname: z.string().trim().min(1, 'Nickname không được để trống').max(100, 'Nickname không được quá 100 ký tự')
+  })
 })

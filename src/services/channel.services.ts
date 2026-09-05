@@ -1,5 +1,5 @@
 import { configChannel } from '~/constants/channel'
-import { ChannelType } from '~/constants/enum'
+import { ChannelType, MessageType } from '~/constants/enum'
 import { ErrorWithStatus } from '~/constants/errors'
 import httpStatus from '~/constants/httpStatus'
 import { ChannelNicknameBody, UpdateChannelConfigBody } from '~/models/requests/channel.request'
@@ -90,13 +90,17 @@ class ChannelService {
       include: {
         members: {
           include: {
-            user: true
+            user: {
+              select: { id: true, username: true, displayName: true, avatar: true, status: true, fullName: true }
+            }
           }
         },
         config: true,
         nicknames: {
           include: {
-            user: true
+            user: {
+              select: { id: true, username: true, displayName: true, avatar: true, status: true, fullName: true }
+            }
           }
         }
       }
@@ -159,24 +163,15 @@ class ChannelService {
 
   async getAttachmentsForChannel(channelId: bigint, limit: number, page: number) {
     // lấy danh sách tin nhắn thuộc về channelId từ đó lấy danh sách attachments
-    const messages = await databaseServices.prisma.message.findMany({
-      where: {
+    const where = {
+      message: {
         channelId
-      },
-      select: {
-        id: true
       }
-    })
-
-    const messageIds = messages.map((message) => message.id)
+    }
 
     const [attachments, total] = await Promise.all([
       databaseServices.prisma.attachment.findMany({
-        where: {
-          messageId: {
-            in: messageIds
-          }
-        },
+        where,
         take: limit,
         skip: (page - 1) * limit,
         orderBy: {
@@ -184,11 +179,7 @@ class ChannelService {
         }
       }),
       databaseServices.prisma.attachment.count({
-        where: {
-          messageId: {
-            in: messageIds
-          }
-        }
+        where
       })
     ])
 
@@ -241,6 +232,7 @@ class ChannelService {
       updatedAt: channel.updatedAt.toISOString(),
       members: channel.members.map((m) => ({
         joinedAt: m.joinedAt ? m.joinedAt.toISOString() : null,
+        role: m.role,
         userId: m.userId.toString(),
         email: m.user.email,
         username: m.user.username,
@@ -266,15 +258,28 @@ class ChannelService {
     }
   }
 
-  async updateChannelConfig(channelId: bigint, config: UpdateChannelConfigBody) {
+  async updateChannelConfig(channelId: bigint, config: UpdateChannelConfigBody, userId: bigint) {
     const channelConfig = await databaseServices.prisma.channelConfig.update({
       where: {
         channelId: channelId
       },
       data: {
-        backgroundColor: config.backgroundColor,
         backgroundUrl: config.backgroundUrl,
         accent: config.accent
+      }
+    })
+
+    const configMessage = await databaseServices.prisma.message.create({
+      data: {
+        channelId,
+        senderId: userId,
+        messageType: MessageType.CONFIG,
+        content: JSON.stringify({
+          action: 'channel_settings_updated'
+        })
+      },
+      include: {
+        sender: true
       }
     })
 
@@ -283,33 +288,77 @@ class ChannelService {
         ...channelConfig,
         id: channelConfig.id.toString(),
         channelId: channelConfig.channelId.toString()
+      },
+      configMessage: {
+        ...configMessage,
+        id: configMessage.id.toString(),
+        channelId: configMessage.channelId.toString(),
+        senderId: configMessage.senderId.toString(),
+        sender: {
+          ...configMessage.sender,
+          id: configMessage.sender.id.toString()
+        }
       }
     }
   }
 
-  async updateChannelNickname(channelId: bigint, nicknames: ChannelNicknameBody[]) {
-    const updatedNicknames = await Promise.all(
-      nicknames.map(async (nickname) => {
-        return await databaseServices.prisma.channelMemberNickname.update({
-          where: {
-            channelId_userId: {
-              channelId,
-              userId: BigInt(nickname.userId)
-            }
-          },
-          data: {
-            nickname: nickname.nickname,
-            updatedAt: new Date()
-          }
+  async updateChannelNickname(channelId: bigint, nickname: ChannelNicknameBody, userId: bigint) {
+    const findUserTarget = await databaseServices.prisma.user.findUnique({
+      where: {
+        id: BigInt(nickname.userId)
+      },
+      select: {
+        fullName: true
+      }
+    })
+
+    const updatedNickname = await databaseServices.prisma.channelMemberNickname.update({
+      where: {
+        channelId_userId: {
+          channelId,
+          userId: BigInt(nickname.userId)
+        }
+      },
+      data: {
+        nickname: nickname.nickname,
+        updatedAt: new Date()
+      }
+    })
+
+    const configMessage = await databaseServices.prisma.message.create({
+      data: {
+        channelId,
+        senderId: userId,
+        messageType: MessageType.CONFIG,
+        content: JSON.stringify({
+          action: 'channel_nicknames_updated',
+          targetUserName: findUserTarget?.fullName,
+          targetUserId: nickname.userId,
+          targetNickname: nickname.nickname
         })
-      })
-    )
+      },
+      include: {
+        sender: true
+      }
+    })
 
     return {
-      channelNicknames: updatedNicknames.map((nickname) => ({
-        ...nickname,
-        id: nickname.id.toString()
-      }))
+      channelNickname: {
+        ...updatedNickname,
+        id: updatedNickname.id.toString(),
+        channelId: updatedNickname.channelId.toString(),
+        userId: updatedNickname.userId.toString()
+      },
+      configMessage: {
+        ...configMessage,
+        id: configMessage.id.toString(),
+        channelId: configMessage.channelId.toString(),
+        senderId: configMessage.senderId.toString(),
+        sender: {
+          ...configMessage.sender,
+          id: configMessage.sender.id.toString()
+        }
+      }
     }
   }
 }

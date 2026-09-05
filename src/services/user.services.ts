@@ -230,7 +230,12 @@ class UserService {
       ]
     }
     const users = await databaseServices.prisma.user.findMany({
-      where,
+      where: {
+        ...where,
+        id: {
+          not: BigInt(me_id)
+        }
+      },
       skip,
       take: limitNumber,
       select: {
@@ -248,12 +253,10 @@ class UserService {
         gender: true
       }
     })
-    return users
-      .filter((user) => user.id !== BigInt(me_id))
-      .map((user) => ({
-        ...user,
-        id: user.id.toString()
-      }))
+    return users.map((user) => ({
+      ...user,
+      id: user.id.toString()
+    }))
   }
 
   async getUserById(id: bigint) {

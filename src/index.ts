@@ -14,7 +14,7 @@ import workspaceRoutes from '~/routes/workspace.routes'
 import socketRoutes from '~/routes/socket.routes'
 
 import { errorHandler } from '~/middlewares/errorHandler.middlewares'
-import { initialSocket } from '~/socket'
+import { initialSocket } from '~/socket/socket'
 config()
 
 // Sửa lỗi BigInt không thể JSON.stringify được

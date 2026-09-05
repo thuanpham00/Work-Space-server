@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { configChannel } from '~/constants/channel'
 import { ChannelType, FriendStatus, FriendStatusRequest } from '~/constants/enum'
 import { ErrorWithStatus } from '~/constants/errors'
@@ -115,6 +116,74 @@ class FriendService {
         ...user,
         id: user.id.toString(),
         createdAt: user.createdAt.toISOString()
+      }
+    })
+  }
+
+  async getUnreadFriends(userId: bigint) {
+    // lấy những channel (ko có workspace - channel DM) mà user tham gia và check unreadState
+    const channelList = await databaseServices.prisma.channelMember.findMany({
+      where: {
+        userId: userId,
+        channel: {
+          workspace: null,
+          type: ChannelType.DM
+        }
+      },
+      select: {
+        channelId: true
+      }
+    })
+
+    const channelIds = channelList.map((m) => m.channelId)
+    if (channelIds.length === 0) return []
+
+    const readChannelStateMap = new Map()
+    const lastMessageMap = new Map()
+
+    const readChannelStates = await databaseServices.prisma.channelReadState.findMany({
+      where: {
+        channelId: { in: channelIds },
+        userId: userId
+      },
+      select: {
+        channelId: true,
+        lastReadMessageId: true
+      }
+    })
+
+    for (const readChannelState of readChannelStates) {
+      const key = readChannelState.channelId.toString()
+      if (!readChannelStateMap.has(key)) {
+        readChannelStateMap.set(key, readChannelState.lastReadMessageId)
+      }
+    }
+
+    const lastMessage = await databaseServices.prisma.message.findMany({
+      where: {
+        channelId: { in: channelIds }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
+
+    for (const message of lastMessage) {
+      const key = message.channelId.toString()
+      if (!lastMessageMap.has(key)) {
+        lastMessageMap.set(key, message.id)
+      }
+    }
+
+    return channelIds.map((channelId) => {
+      const key = channelId.toString()
+      const readChannelState = readChannelStateMap.get(key)
+      const lastMessageState = lastMessageMap.get(key)
+
+      return {
+        channelId,
+        lastMessageId: lastMessageState,
+        unread: lastMessageState !== null && readChannelState !== lastMessageState
       }
     })
   }

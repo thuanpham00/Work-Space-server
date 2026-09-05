@@ -5,7 +5,7 @@ export type UpdateChannelConfigBody = {
 }
 
 export type UpdateChannelNicknameBody = {
-  nicknames: ChannelNicknameBody[]
+  nickname: ChannelNicknameBody
 }
 
 export type ChannelNicknameBody = {

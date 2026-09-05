@@ -20,6 +20,11 @@ export enum WorkspaceMemberRole {
   OWNER = 'OWNER'
 }
 
+export enum ChannelMemberRole {
+  ADMIN = 'ADMIN',
+  MEMBER = 'MEMBER'
+}
+
 export enum UserStatus {
   ONLINE = 'ONLINE',
   OFFLINE = 'OFFLINE',
