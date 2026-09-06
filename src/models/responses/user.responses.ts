@@ -1,4 +1,4 @@
-import { TokenType } from '~/constants/enum'
+import { FriendStatusRequest, TokenType } from '~/constants/enum'
 
 export enum UserStatus {
   ONLINE = 'ONLINE',
@@ -21,7 +21,7 @@ export interface User {
   createdAt: Date
   updatedAt: Date
   gender: string | null
-  receivedFriendRequests?: { status: string }[]
+  friendStatus?: FriendStatusRequest | null
   privacySettings?: {
     showEmail: boolean
     showPhone: boolean

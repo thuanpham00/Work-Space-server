@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { signToken, verifyToken } from '~/utils/jwt'
 import databaseServices from './database.services'
-import { ChannelType, TokenType, WorkspaceMemberRole } from '~/constants/enum'
+import { ChannelType, FriendStatus, FriendStatusRequest, TokenType, WorkspaceMemberRole } from '~/constants/enum'
 import { envConfig } from '~/utils/config'
 import { hashPassword } from '~/utils/scripto'
 import { ErrorWithStatus } from '~/constants/errors'
@@ -369,38 +369,59 @@ class UserService {
 
   // Lấy thông tin user và trạng thái kết bạn giữa user hiện tại và user được yêu cầu
   async getInfoUserStatus(idAddress: bigint, idRequester: bigint) {
-    const user = await databaseServices.prisma.user.findUnique({
-      where: { id: idAddress },
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        displayName: true,
-        avatar: true,
-        bio: true,
-        status: true,
-        createdAt: true,
-        fullName: true,
-        gender: true,
-        phone: true,
-        dateOfBirth: true,
-        receivedFriendRequests: {
-          where: {
-            requesterId: idRequester // lấy trạng thái friend của user hiện tại với user được yêu cầu
-          },
-          select: {
-            status: true
-          },
-          take: 1 // chỉ lấy 1 bản ghi vì chỉ có 1 trạng thái friend giữa 2 user
+    const [user, friendship] = await Promise.all([
+      databaseServices.prisma.user.findUnique({
+        where: { id: idAddress },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          displayName: true,
+          avatar: true,
+          bio: true,
+          status: true,
+          createdAt: true,
+          fullName: true,
+          gender: true,
+          phone: true,
+          dateOfBirth: true,
+          privacySettings: true
+        }
+      }),
+      databaseServices.prisma.friend.findFirst({
+        where: {
+          OR: [
+            { requesterId: idRequester, addresseeId: idAddress },
+            { requesterId: idAddress, addresseeId: idRequester }
+          ]
         },
-        privacySettings: true
-      }
-    })
+        select: {
+          status: true,
+          requesterId: true
+        }
+      })
+    ])
 
-    if (user) {
-      return { ...user, id: user.id.toString() }
+    if (!user) return null
+
+    let friendStatus: FriendStatusRequest | null = null
+
+    if (friendship) {
+      if (friendship.status === FriendStatus.ACCEPTED) {
+        friendStatus = FriendStatusRequest.ACCEPTED
+      } else if (friendship.status === FriendStatus.PENDING) {
+        friendStatus =
+          friendship.requesterId === idRequester
+            ? FriendStatusRequest.REQUEST_SENT
+            : FriendStatusRequest.REQUEST_RECEIVED
+      }
     }
-    return user
+
+    return {
+      ...user,
+      id: user.id.toString(),
+      friendStatus
+    }
   }
 }
 
