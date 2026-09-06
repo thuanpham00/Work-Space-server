@@ -1,34 +1,5 @@
 import { User } from '~/models/responses/user.responses'
 
-export interface ChannelDM {
-  id: string
-  workspaceId: string
-  name: string
-  description: string
-  type: string
-  isPrivate: boolean
-  createdAt: string
-  updatedAt: string
-  friend: {
-    id: string
-    email: string
-    password: string
-    username: string
-    displayName: string
-    avatar: string
-    bio: string
-    status: string
-    createdAt: string
-    updatedAt: string
-    dateOfBirth: string
-    phone: string
-    gender: string
-    fullName: string
-  }
-  config: ChannelConfig
-  nicknames: ChannelMemberNickname[]
-}
-
 export interface Channel {
   id: string
   workspaceId: string | null
