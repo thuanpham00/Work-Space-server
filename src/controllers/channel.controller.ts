@@ -29,21 +29,6 @@ export const createChannelController = async (req: AuthenticatedRequest, res: Re
   res.status(201).json(response)
 }
 
-export const getDirectMessageChannelsController = async (req: AuthenticatedRequest, res: Response) => {
-  const { user_id: userId } = req.decode_authorization as TokenPayload
-  const { userId: receivedId } = req.params as { userId: string }
-
-  const channels = await channelServices.getDirectMessageChannelDetail(BigInt(userId), BigInt(receivedId))
-  const response: ApiResponse<{ channel: ChannelDM | null }> = {
-    message: 'Lấy chi tiết channels thành công',
-    data: {
-      channel: channels as unknown as ChannelDM
-    }
-  }
-
-  res.json(response)
-}
-
 export const getChannelMessagesController = async (req: AuthenticatedRequest, res: Response) => {
   const { channelId } = req.params as { channelId: string }
   const { page, limit } = req.query as QueryBase

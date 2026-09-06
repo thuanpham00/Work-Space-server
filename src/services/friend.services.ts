@@ -6,7 +6,7 @@ import httpStatus from '~/constants/httpStatus'
 import databaseServices from '~/services/database.services'
 
 class FriendService {
-  async getAllFriends(userId: bigint, status: string, search: string) {
+  async getFriendsStatus(userId: bigint, status: string, search: string) {
     const keyword = search.trim()
 
     const userSearch = keyword
@@ -58,23 +58,6 @@ class FriendService {
         break
 
       default:
-        where = {
-          status: FriendStatus.ACCEPTED,
-          OR: [
-            {
-              requesterId: userId,
-              ...(userSearch && {
-                addressee: userSearch
-              })
-            },
-            {
-              addresseeId: userId,
-              ...(userSearch && {
-                requester: userSearch
-              })
-            }
-          ]
-        }
         break
     }
 
@@ -118,6 +101,150 @@ class FriendService {
         createdAt: user.createdAt.toISOString()
       }
     })
+  }
+
+  async getAllChannelsFriends(userId: bigint, search: string) {
+    const keyword = search.trim()
+    const friendSearch = keyword
+      ? {
+          OR: [
+            {
+              username: {
+                contains: keyword,
+                mode: 'insensitive' as const
+              }
+            },
+            {
+              displayName: {
+                contains: keyword,
+                mode: 'insensitive' as const
+              }
+            },
+            {
+              fullName: {
+                contains: keyword,
+                mode: 'insensitive' as const
+              }
+            }
+          ]
+        }
+      : undefined
+
+    const channelList = await databaseServices.prisma.channelMember.findMany({
+      where: {
+        userId: userId,
+        channel: {
+          workspace: null,
+          type: ChannelType.DM,
+          ...(friendSearch && {
+            members: {
+              some: {
+                userId: { not: userId },
+                user: friendSearch
+              }
+            }
+          })
+        }
+      },
+      include: {
+        channel: {
+          include: {
+            members: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    username: true,
+                    displayName: true,
+                    avatar: true,
+                    status: true,
+                    fullName: true,
+                    createdAt: true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    })
+
+    const channelIds = channelList.map((m) => m.channelId)
+    if (channelIds.length === 0) return []
+
+    const messages = await databaseServices.prisma.message.findMany({
+      where: { channelId: { in: channelIds } },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            username: true,
+            displayName: true,
+            avatar: true,
+            status: true,
+            fullName: true
+          }
+        }
+      }
+    })
+
+    const lastMessageMap = new Map<string, (typeof messages)[0]>()
+    for (const message of messages) {
+      const key = message.channelId.toString()
+      if (!lastMessageMap.has(key)) {
+        lastMessageMap.set(key, message)
+      }
+    }
+
+    return channelList
+      .map((member) => {
+        const { channel } = member
+        const friendMember = channel.members.find((m) => m.userId !== userId)
+        const friend = friendMember?.user ?? null
+        const channelKey = channel.id.toString()
+        const lastMessage = lastMessageMap.get(channelKey) ?? null
+
+        return {
+          id: channelKey,
+          channelId: channelKey,
+          name: channel.name,
+          description: channel.description,
+          type: channel.type,
+          isPrivate: channel.isPrivate,
+          createdAt: channel.createdAt.toISOString(),
+          updatedAt: channel.updatedAt.toISOString(),
+          friend: friend
+            ? {
+                ...friend,
+                id: friend.id.toString(),
+                createdAt: friend.createdAt.toISOString()
+              }
+            : null,
+          lastMessage: lastMessage
+            ? {
+                id: lastMessage.id.toString(),
+                channelId: lastMessage.channelId.toString(),
+                senderId: lastMessage.senderId.toString(),
+                content: lastMessage.content,
+                messageType: lastMessage.messageType,
+                replyToId: lastMessage.replyToId?.toString() ?? null,
+                createdAt: lastMessage.createdAt.toISOString(),
+                updatedAt: lastMessage.updatedAt.toISOString(),
+                deletedAt: lastMessage.deletedAt?.toISOString() ?? null,
+                sender: {
+                  ...lastMessage.sender,
+                  id: lastMessage.sender.id.toString()
+                }
+              }
+            : null
+        }
+      })
+      .sort((a, b) => {
+        const aTime = a.lastMessage?.createdAt ?? a.updatedAt
+        const bTime = b.lastMessage?.createdAt ?? b.updatedAt
+        return new Date(bTime).getTime() - new Date(aTime).getTime()
+      })
   }
 
   async getUnreadFriends(userId: bigint) {
@@ -251,8 +378,7 @@ class FriendService {
         config: {
           create: {
             accent: configChannel.defaultAccent,
-            backgroundUrl: '',
-            backgroundColor: configChannel.defaultBackgroundColor
+            backgroundUrl: ''
           }
         }, // tạo config cho channel
         nicknames: {

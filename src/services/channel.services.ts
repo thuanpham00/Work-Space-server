@@ -56,8 +56,7 @@ class ChannelService {
         config: {
           create: {
             accent: configChannel.defaultAccent,
-            backgroundUrl: '',
-            backgroundColor: configChannel.defaultBackgroundColor
+            backgroundUrl: ''
           }
         },
         ...(nicknamesData.length > 0 && {
@@ -78,57 +77,6 @@ class ChannelService {
       isPrivate: channel.isPrivate,
       createdAt: channel.createdAt.toISOString(),
       updatedAt: channel.updatedAt.toISOString()
-    }
-  }
-
-  async getDirectMessageChannelDetail(idUser: bigint, idReceiver: bigint) {
-    const channel = await databaseServices.prisma.channel.findFirst({
-      where: {
-        type: ChannelType.DM,
-        AND: [{ members: { some: { userId: idUser } } }, { members: { some: { userId: idReceiver } } }]
-      },
-      include: {
-        members: {
-          include: {
-            user: {
-              select: { id: true, username: true, displayName: true, avatar: true, status: true, fullName: true }
-            }
-          }
-        },
-        config: true,
-        nicknames: {
-          include: {
-            user: {
-              select: { id: true, username: true, displayName: true, avatar: true, status: true, fullName: true }
-            }
-          }
-        }
-      }
-    })
-
-    if (!channel) return null
-
-    const { members, nicknames, ...restChannel } = channel
-
-    return {
-      ...restChannel,
-      id: channel.id.toString(),
-      workspaceId: channel.workspaceId ? channel.workspaceId.toString() : null,
-      friend:
-        members
-          .filter((member) => member.userId !== idUser)
-          .map((member) => {
-            return {
-              ...member.user,
-              id: member.user.id.toString()
-            }
-          })[0] || null,
-      nicknames: nicknames.map((nickname) => {
-        return {
-          ...nickname,
-          id: nickname.user.id.toString()
-        }
-      })
     }
   }
 
@@ -204,7 +152,13 @@ class ChannelService {
                 username: true,
                 displayName: true,
                 avatar: true,
-                status: true
+                status: true,
+                fullName: true,
+                privacySettings: true,
+                phone: true,
+                gender: true,
+                dateOfBirth: true,
+                createdAt: true
               }
             }
           }
@@ -238,7 +192,13 @@ class ChannelService {
         username: m.user.username,
         displayName: m.user.displayName,
         avatar: m.user.avatar,
-        status: m.user.status
+        status: m.user.status,
+        fullName: m.user.fullName,
+        privacySettings: m.user.privacySettings,
+        phone: m.user.phone,
+        gender: m.user.gender,
+        dateOfBirth: m.user.dateOfBirth,
+        createdAt: m.user.createdAt.toISOString()
       })),
       config: channel.config
         ? {

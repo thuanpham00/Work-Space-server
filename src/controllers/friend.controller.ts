@@ -2,7 +2,7 @@ import { Response } from 'express'
 import { ErrorWithStatus } from '~/constants/errors'
 import httpStatus from '~/constants/httpStatus'
 import { AuthenticatedRequest } from '~/models/requests/user.requests'
-import { FriendResponse } from '~/models/responses/friend.responses'
+import { FriendDMChannelResponse, FriendResponse } from '~/models/responses/friend.responses'
 import { ApiResponse, TokenPayload } from '~/models/responses/user.responses'
 import friendServices from '~/services/friend.services'
 
@@ -11,13 +11,30 @@ export const getAllFriendsController = async (req: AuthenticatedRequest, res: Re
   const { user_id } = req.decode_authorization as TokenPayload
   const { status, search } = req.query as { status?: string; search?: string }
 
-  const friends = await friendServices.getAllFriends(BigInt(user_id), status as string, search as string)
+  const friends = await friendServices.getFriendsStatus(BigInt(user_id), status as string, search as string)
 
   const response: ApiResponse<{ friends: FriendResponse[]; total: number }> = {
     message: 'Lấy danh sách bạn bè thành công',
     data: {
       friends: friends as unknown as FriendResponse[],
       total: friends.length
+    }
+  }
+
+  res.json(response)
+}
+
+export const getAllFriendsChannelsController = async (req: AuthenticatedRequest, res: Response) => {
+  const { user_id } = req.decode_authorization as TokenPayload
+  const { search } = req.query as { search?: string }
+
+  const channels = await friendServices.getAllChannelsFriends(BigInt(user_id), search as string)
+
+  const response: ApiResponse<{ channels: FriendDMChannelResponse[]; total: number }> = {
+    message: 'Lấy danh sách channel của bạn bè thành công',
+    data: {
+      channels: channels as unknown as FriendDMChannelResponse[],
+      total: channels.length
     }
   }
 

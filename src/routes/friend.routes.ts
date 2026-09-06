@@ -2,6 +2,7 @@ import { Router } from 'express'
 import {
   acceptFriendController,
   addFriendController,
+  getAllFriendsChannelsController,
   getAllFriendsController,
   getUnreadFriendsController,
   rejectFriendController
@@ -14,6 +15,9 @@ const router = Router()
 
 // lấy danh sách bạn bè dựa trên trạng thái (pending, accepted, tất cả)
 router.get('/', accessTokenValidator, validateQuery(friendSchema), asyncHandler(getAllFriendsController))
+
+// lấy danh sách channel của bạn bè đã accept
+router.get('/channels', accessTokenValidator, asyncHandler(getAllFriendsChannelsController))
 
 // lấy trạng thái unread của bạn bè đối với userId
 router.get('/unread', accessTokenValidator, asyncHandler(getUnreadFriendsController))

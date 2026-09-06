@@ -4,7 +4,6 @@ import {
   getChannelAttachmentsController,
   getChannelDetailController,
   getChannelMessagesController,
-  getDirectMessageChannelsController,
   updateChannelNicknameController,
   updateChannelSettingsController,
   uploadFileMessageController
@@ -12,7 +11,7 @@ import {
 import { accessTokenValidator } from '~/middlewares/auth.middlewares'
 import { asyncHandler, validate, validateParams, validateQuery } from '~/middlewares/errorHandler.middlewares'
 import { queryBase } from '~/models/schemas/query.schema'
-import { channelIdSchema, userIdParamSchema } from '~/models/schemas/user.schemas'
+import { channelIdSchema } from '~/models/schemas/user.schemas'
 import {
   createChannelSchema,
   updateChannelConfigSchema,
@@ -51,14 +50,6 @@ router.get(
   validateParams(channelIdSchema),
   validateQuery(queryBase),
   asyncHandler(getChannelAttachmentsController)
-)
-
-// lấy thông tin phòng chat channel DM của dựa tren userId (receiver)
-router.get(
-  '/direct-messages/:userId',
-  accessTokenValidator,
-  validateParams(userIdParamSchema),
-  asyncHandler(getDirectMessageChannelsController)
 )
 
 router.patch(
