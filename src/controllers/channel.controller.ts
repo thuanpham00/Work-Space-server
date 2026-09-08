@@ -163,3 +163,15 @@ export const updateChannelNicknameController = async (req: AuthenticatedRequest,
     }
   })
 }
+
+export const getUnreadChannelController = async (req: AuthenticatedRequest, res: Response) => {
+  const { user_id } = req.decode_authorization as TokenPayload
+  const unreadFriends = await channelServices.getUnreadChannel(BigInt(user_id))
+
+  res.json({
+    message: 'Lấy trạng thái unread của channel thành công',
+    data: {
+      unreadFriends
+    }
+  })
+}

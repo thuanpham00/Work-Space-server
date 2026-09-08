@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-function-type */
 import { Request, Response, NextFunction } from 'express'
 import { ErrorWithStatus } from '../constants/errors'
 

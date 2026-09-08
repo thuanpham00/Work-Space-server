@@ -4,6 +4,7 @@ import {
   getChannelAttachmentsController,
   getChannelDetailController,
   getChannelMessagesController,
+  getUnreadChannelController,
   updateChannelNicknameController,
   updateChannelSettingsController,
   uploadFileMessageController
@@ -19,6 +20,9 @@ import {
 } from '../models/schemas/channel.schema'
 import { uploadMessageMiddleware } from '~/middlewares/upload.middlewares'
 const router = Router()
+
+// lấy trạng thái unread của bạn bè đối với userId
+router.get('/unread', accessTokenValidator, asyncHandler(getUnreadChannelController))
 
 // tạo channel
 router.post('/', accessTokenValidator, validate(createChannelSchema), asyncHandler(createChannelController))
