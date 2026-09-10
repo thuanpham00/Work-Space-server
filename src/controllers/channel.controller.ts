@@ -8,13 +8,14 @@ import { Channel } from '~/models/responses/channel.response'
 import { Message } from '~/models/responses/message.response'
 import { ApiResponse, TokenPayload } from '~/models/responses/user.responses'
 import { CreateChannelBody } from '~/models/schemas/channel.schema'
-import { QueryBase } from '~/models/schemas/query.schema'
+import { QueryAttachment, QueryBase } from '~/models/schemas/query.schema'
 import channelServices from '~/services/channel.services'
 import fs from 'fs'
 import r2Services from '~/services/r2.services'
 import { UpdateChannelConfigBody, UpdateChannelNicknameBody } from '~/models/requests/channel.request'
 import { Socket_Room } from '~/socket/utils'
 import { io } from '~/socket/socket'
+import { Attachment } from '~/models/responses/attachment.response'
 
 export const createChannelController = async (req: AuthenticatedRequest, res: Response) => {
   const channel = await channelServices.createChannel(req.body as CreateChannelBody)
@@ -50,18 +51,19 @@ export const getChannelMessagesController = async (req: AuthenticatedRequest, re
 
 export const getChannelAttachmentsController = async (req: AuthenticatedRequest, res: Response) => {
   const { channelId } = req.params as { channelId: string }
-  const { page, limit } = req.query as QueryBase
+  const { page, limit, type } = req.query as QueryAttachment
 
-  const { attachments, total } = await channelServices.getAttachmentsForChannel(
+  const { resAttachments, total } = await channelServices.getAttachmentsForChannel(
     BigInt(channelId),
     Number(limit),
-    Number(page)
+    Number(page),
+    type
   )
 
-  const response: ApiResponse<{ attachments: any[]; total_page: number; limit: number; page: number }> = {
+  const response: ApiResponse<{ attachments: Attachment[]; total_page: number; limit: number; page: number }> = {
     message: 'Lấy danh sách attachments thành công',
     data: {
-      attachments: attachments as any,
+      attachments: resAttachments as any,
       total_page: Math.ceil(total / Number(limit)),
       limit: Number(limit),
       page: Number(page)

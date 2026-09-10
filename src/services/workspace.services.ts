@@ -1,3 +1,4 @@
+import { Channel } from '~/models/responses/channel.response'
 import type { Workspace as WorkspaceResponse, WorkspaceCategory } from '~/models/responses/workspace.response'
 import databaseServices from '~/services/database.services'
 
@@ -11,20 +12,22 @@ class Workspace {
         workspaceId: category.workspaceId.toString(),
         name: category.name ? category.name : null,
         position: category.position,
-        createdAt: category.createdAt.toISOString(),
-        updatedAt: category.updatedAt.toISOString(),
+        createdAt: category.createdAt,
+        updatedAt: category.updatedAt,
         channels: category.channels
-          ? category.channels.map((channel: any) => ({
-              ...channel,
-              id: channel.id.toString(),
-              workspaceId: channel.workspaceId ? channel.workspaceId.toString() : null,
-              categoryId: channel.categoryId ? channel.categoryId.toString() : null,
-              name: channel.name ? channel.name : null,
-              description: channel.description ? channel.description : null,
-              type: channel.type ? channel.type : null,
-              createdAt: channel.createdAt.toISOString(),
-              updatedAt: channel.updatedAt.toISOString()
-            }))
+          ? category.channels
+              .sort((a: Channel, b: Channel) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+              .map((channel: Channel) => ({
+                ...channel,
+                id: channel.id.toString(),
+                workspaceId: channel.workspaceId ? channel.workspaceId.toString() : null,
+                categoryId: channel.categoryId ? channel.categoryId.toString() : null,
+                name: channel.name ? channel.name : null,
+                description: channel.description ? channel.description : null,
+                type: channel.type ? channel.type : null,
+                createdAt: channel.createdAt,
+                updatedAt: channel.updatedAt
+              }))
           : []
       }))
   }

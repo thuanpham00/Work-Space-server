@@ -5,9 +5,10 @@ import httpStatus from '~/constants/httpStatus'
 import { ChannelNicknameBody, UpdateChannelConfigBody } from '~/models/requests/channel.request'
 import { CreateChannelBody } from '~/models/schemas/channel.schema'
 import databaseServices from './database.services'
+import { AttachmentType } from '~/models/responses/attachment.response'
 
 class ChannelService {
-  async createChannel({ categoryId, name, description, type, isPrivate }: CreateChannelBody) {
+  async createChannel({ categoryId, name, description, type, isPrivate, isDefault }: CreateChannelBody) {
     const category = await databaseServices.prisma.categoryChannel.findUnique({
       where: {
         id: BigInt(categoryId)
@@ -45,6 +46,9 @@ class ChannelService {
       nickname: ''
     }))
 
+    // Validation logic: isPrivate = true → isDefault = false
+    const finalIsDefault = isPrivate ? false : (isDefault ?? false)
+
     const channel = await databaseServices.prisma.channel.create({
       data: {
         workspaceId: category.workspaceId,
@@ -53,6 +57,7 @@ class ChannelService {
         description: description ?? null,
         type: type.toUpperCase() as ChannelType,
         isPrivate: isPrivate ?? false,
+        isDefault: finalIsDefault,
         config: {
           create: {
             accent: configChannel.defaultAccent,
@@ -75,6 +80,7 @@ class ChannelService {
       description: channel.description,
       type: channel.type,
       isPrivate: channel.isPrivate,
+      isDefault: channel.isDefault,
       createdAt: channel.createdAt.toISOString(),
       updatedAt: channel.updatedAt.toISOString()
     }
@@ -109,12 +115,25 @@ class ChannelService {
     }
   }
 
-  async getAttachmentsForChannel(channelId: bigint, limit: number, page: number) {
+  async getAttachmentsForChannel(channelId: bigint, limit: number, page: number, type: string) {
     // lấy danh sách tin nhắn thuộc về channelId từ đó lấy danh sách attachments
+
+    // nếu type === image thì attachment.mimeType.startsWith("image/")
+    // nếu type === file thì !attachment.mimeType.startsWith("image/")
     const where = {
       message: {
         channelId
-      }
+      },
+      mimeType:
+        type === AttachmentType.IMAGE
+          ? {
+              startsWith: 'image/'
+            }
+          : {
+              not: {
+                startsWith: 'image/'
+              }
+            }
     }
 
     const [attachments, total] = await Promise.all([
@@ -132,7 +151,7 @@ class ChannelService {
     ])
 
     return {
-      attachments,
+      resAttachments: attachments,
       total
     }
   }
@@ -182,6 +201,7 @@ class ChannelService {
       description: channel.description,
       type: channel.type,
       isPrivate: channel.isPrivate,
+      isDefault: channel.isDefault,
       createdAt: channel.createdAt.toISOString(),
       updatedAt: channel.updatedAt.toISOString(),
       members: channel.members.map((m) => ({

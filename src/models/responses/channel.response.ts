@@ -8,6 +8,7 @@ export interface Channel {
   description: string | null
   type: string | null
   isPrivate: boolean
+  isDefault: boolean
   createdAt: string
   updatedAt: string
   members?: MemberChannel[]

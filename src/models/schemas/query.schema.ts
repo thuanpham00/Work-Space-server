@@ -6,3 +6,10 @@ export const queryBase = z.object({
 })
 
 export type QueryBase = z.infer<typeof queryBase>
+
+export const queryAttachment = queryBase.extend({
+  type: z.string()
+})
+
+export type QueryAttachment = z.infer<typeof queryAttachment>
+
