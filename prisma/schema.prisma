@@ -56,6 +56,24 @@ enum FriendStatus {
   @@map("friend_status")
 }
 
+enum WorkspaceMemberStatus {
+  PENDING_INVITE  @map("pending_invite")
+  PENDING_REQUEST @map("pending_request")
+  ACTIVE          @map("active")
+  REJECTED        @map("rejected")
+  LEFT            @map("left")
+  CANCELLED       @map("cancelled")
+
+  @@map("workspace_member_status")
+}
+
+enum ApproverType {
+  ADMIN @map("admin")
+  USER  @map("user")
+
+  @@map("approver_type")
+}
+
 enum Gender {
   MALE   @map("male")
   FEMALE @map("female")
@@ -93,6 +111,11 @@ model User {
   receivedFriendRequests Friend[]                @relation("FriendAddressee")
   pinnedMessages         PinnedMessage[]
   channelNicknames       ChannelMemberNickname[]
+
+  // Thêm cho workspace member approval flow
+  invitedWorkspaceMembers   WorkspaceMember[] @relation("WorkspaceMemberInviter")
+  requestedWorkspaceMembers WorkspaceMember[] @relation("WorkspaceMemberRequester")
+  approvedWorkspaceMembers  WorkspaceMember[] @relation("WorkspaceMemberApprover")
 
   @@map("users") // Đổi tên bảng
 }
@@ -165,16 +188,38 @@ model CategoryChannel {
 }
 
 model WorkspaceMember {
-  workspaceId BigInt              @map("workspace_id")
-  userId      BigInt              @map("user_id")
-  role        WorkspaceMemberRole @default(MEMBER)
-  joinedAt    DateTime?           @map("joined_at")
+  workspaceId BigInt                @map("workspace_id")
+  userId      BigInt                @map("user_id")
+  role        WorkspaceMemberRole   @default(MEMBER)
+  status      WorkspaceMemberStatus @default(PENDING_INVITE)
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade, map: "workspace_members_workspace_id_fkey")
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade, map: "workspace_members_user_id_fkey")
+  // Timestamps
+  joinedAt   DateTime? @map("joined_at")
+  invitedAt  DateTime? @map("invited_at")
+  acceptedAt DateTime? @map("accepted_at")
+  rejectedAt DateTime? @map("rejected_at")
+  expiresAt  DateTime? @map("expires_at")
+
+  // Người liên quan
+  invitedById    BigInt?       @map("invited_by_id")
+  requestedById  BigInt?       @map("requested_by_id")
+  approvedById   BigInt?       @map("approved_by_id")
+  approvedByType ApproverType? @map("approved_by_type")
+
+  // Lý do & tin nhắn
+  inviteMessage String? @map("invite_message") @db.Text
+
+  // Relations
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade, map: "workspace_members_workspace_id_fkey")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade, map: "workspace_members_user_id_fkey")
+  invitedBy   User?     @relation("WorkspaceMemberInviter", fields: [invitedById], references: [id], onDelete: SetNull, map: "workspace_members_invited_by_id_fkey")
+  requestedBy User?     @relation("WorkspaceMemberRequester", fields: [requestedById], references: [id], onDelete: SetNull, map: "workspace_members_requested_by_id_fkey")
+  approvedBy  User?     @relation("WorkspaceMemberApprover", fields: [approvedById], references: [id], onDelete: SetNull, map: "workspace_members_approved_by_id_fkey")
 
   @@id([workspaceId, userId])
   @@index([userId])
+  @@index([workspaceId, status])
+  @@index([status, expiresAt])
   @@map("workspace_members")
 }
 

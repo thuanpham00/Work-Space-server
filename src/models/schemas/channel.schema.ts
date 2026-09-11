@@ -22,6 +22,33 @@ export const createChannelSchema = z
 
 export type CreateChannelBody = z.infer<typeof createChannelSchema>
 
+export const updateChannelSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(1, 'Tên channel không được để trống')
+      .max(100, 'Tên channel không được quá 100 ký tự')
+      .optional(),
+    description: z.string().trim().max(500, 'Mô tả không được quá 500 ký tự').optional().nullable(),
+    categoryId: z.string().min(1, 'ID category không được để trống').optional(),
+    isPrivate: z.boolean().optional(),
+    isDefault: z.boolean().optional()
+  })
+  .strict()
+  .superRefine((data, ctx) => {
+    // Validation: Nếu isPrivate = true thì isDefault phải = false
+    if (data.isPrivate === true && data.isDefault === true) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Channel private không thể là channel mặc định (isDefault phải là false)',
+        path: ['isDefault']
+      })
+    }
+  })
+
+export type UpdateChannelBody = z.infer<typeof updateChannelSchema>
+
 export const updateChannelConfigSchema = z.object({
   backgroundColor: z.string().optional(),
   backgroundImage: z.string().optional(),

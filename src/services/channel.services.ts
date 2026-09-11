@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { configChannel } from '~/constants/channel'
-import { ChannelType, MessageType } from '~/constants/enum'
+import { ChannelMemberRole, ChannelType, MessageType } from '~/constants/enum'
 import { ErrorWithStatus } from '~/constants/errors'
 import httpStatus from '~/constants/httpStatus'
 import { ChannelNicknameBody, UpdateChannelConfigBody } from '~/models/requests/channel.request'
-import { CreateChannelBody } from '~/models/schemas/channel.schema'
+import { CreateChannelBody, UpdateChannelBody } from '~/models/schemas/channel.schema'
 import databaseServices from './database.services'
 import { AttachmentType } from '~/models/responses/attachment.response'
 
@@ -68,7 +69,14 @@ class ChannelService {
           nicknames: {
             create: nicknamesData
           }
-        })
+        }),
+        members: {
+          create: {
+            userId: category.workspace.ownerId!,
+            role: ChannelMemberRole.ADMIN,
+            joinedAt: new Date()
+          }
+        }
       }
     })
 
@@ -187,7 +195,8 @@ class ChannelService {
           include: {
             user: true
           }
-        }
+        },
+        category: true
       }
     })
 
@@ -234,7 +243,78 @@ class ChannelService {
               id: nickname.user.id.toString()
             }
           })
+        : null,
+      category: channel.category
+        ? {
+            ...channel.category,
+            id: channel.category.id.toString()
+          }
         : null
+    }
+  }
+
+  async updateChannel(channelId: bigint, body: UpdateChannelBody) {
+    // Kiểm tra channel có tồn tại không
+    const existingChannel = await databaseServices.prisma.channel.findUnique({
+      where: { id: channelId }
+    })
+
+    if (!existingChannel) {
+      throw new ErrorWithStatus({
+        message: 'Channel không tồn tại',
+        status: httpStatus.NOTFOUND
+      })
+    }
+
+    // Nếu update categoryId thì kiểm tra category có tồn tại không
+    if (body.categoryId !== undefined) {
+      const category = await databaseServices.prisma.categoryChannel.findUnique({
+        where: { id: BigInt(body.categoryId) }
+      })
+
+      if (!category) {
+        throw new ErrorWithStatus({
+          message: 'Category không tồn tại',
+          status: httpStatus.NOTFOUND
+        })
+      }
+    }
+
+    // Validation logic: isPrivate = true → isDefault = false
+    const finalIsPrivate = body.isPrivate !== undefined ? body.isPrivate : existingChannel.isPrivate
+    const finalIsDefault = body.isDefault !== undefined ? body.isDefault : existingChannel.isDefault
+
+    if (finalIsPrivate === true && finalIsDefault === true) {
+      throw new ErrorWithStatus({
+        message: 'Channel private không thể là channel mặc định (isDefault phải là false)',
+        status: httpStatus.BAD_REQUESTED
+      })
+    }
+
+    // Build data update - không cho phép update type
+    const updateData: any = {}
+    if (body.name !== undefined) updateData.name = body.name
+    if (body.description !== undefined) updateData.description = body.description
+    if (body.categoryId !== undefined) updateData.categoryId = BigInt(body.categoryId)
+    if (body.isPrivate !== undefined) updateData.isPrivate = body.isPrivate
+    if (body.isDefault !== undefined) updateData.isDefault = body.isDefault
+
+    const updatedChannel = await databaseServices.prisma.channel.update({
+      where: { id: channelId },
+      data: updateData
+    })
+
+    return {
+      id: updatedChannel.id.toString(),
+      workspaceId: updatedChannel.workspaceId ? updatedChannel.workspaceId.toString() : null,
+      categoryId: updatedChannel.categoryId ? updatedChannel.categoryId.toString() : null,
+      name: updatedChannel.name,
+      description: updatedChannel.description,
+      type: updatedChannel.type,
+      isPrivate: updatedChannel.isPrivate,
+      isDefault: updatedChannel.isDefault,
+      createdAt: updatedChannel.createdAt.toISOString(),
+      updatedAt: updatedChannel.updatedAt.toISOString()
     }
   }
 

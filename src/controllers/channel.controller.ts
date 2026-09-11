@@ -7,7 +7,7 @@ import { AuthenticatedRequest } from '~/models/requests/user.requests'
 import { Channel } from '~/models/responses/channel.response'
 import { Message } from '~/models/responses/message.response'
 import { ApiResponse, TokenPayload } from '~/models/responses/user.responses'
-import { CreateChannelBody } from '~/models/schemas/channel.schema'
+import { CreateChannelBody, UpdateChannelBody } from '~/models/schemas/channel.schema'
 import { QueryAttachment, QueryBase } from '~/models/schemas/query.schema'
 import channelServices from '~/services/channel.services'
 import fs from 'fs'
@@ -16,19 +16,6 @@ import { UpdateChannelConfigBody, UpdateChannelNicknameBody } from '~/models/req
 import { Socket_Room } from '~/socket/utils'
 import { io } from '~/socket/socket'
 import { Attachment } from '~/models/responses/attachment.response'
-
-export const createChannelController = async (req: AuthenticatedRequest, res: Response) => {
-  const channel = await channelServices.createChannel(req.body as CreateChannelBody)
-
-  const response: ApiResponse<{ channel: Channel }> = {
-    message: 'Tạo channel thành công',
-    data: {
-      channel
-    }
-  }
-
-  res.status(201).json(response)
-}
 
 export const getChannelMessagesController = async (req: AuthenticatedRequest, res: Response) => {
   const { channelId } = req.params as { channelId: string }
@@ -89,6 +76,18 @@ export const getChannelDetailController = async (req: AuthenticatedRequest, res:
     message: 'Lấy chi tiết channel thành công',
     data: {
       channel
+    }
+  })
+}
+
+export const getUnreadChannelController = async (req: AuthenticatedRequest, res: Response) => {
+  const { user_id } = req.decode_authorization as TokenPayload
+  const unreadFriends = await channelServices.getUnreadChannel(BigInt(user_id))
+
+  res.json({
+    message: 'Lấy trạng thái unread của channel thành công',
+    data: {
+      unreadFriends
     }
   })
 }
@@ -166,14 +165,34 @@ export const updateChannelNicknameController = async (req: AuthenticatedRequest,
   })
 }
 
-export const getUnreadChannelController = async (req: AuthenticatedRequest, res: Response) => {
-  const { user_id } = req.decode_authorization as TokenPayload
-  const unreadFriends = await channelServices.getUnreadChannel(BigInt(user_id))
+export const createChannelController = async (req: AuthenticatedRequest, res: Response) => {
+  const channel = await channelServices.createChannel(req.body as CreateChannelBody)
 
-  res.json({
-    message: 'Lấy trạng thái unread của channel thành công',
+  const response: ApiResponse<{ channel: Channel }> = {
+    message: 'Tạo channel thành công',
     data: {
-      unreadFriends
+      channel
     }
+  }
+
+  res.status(201).json(response)
+}
+
+export const updateChannelController = async (req: AuthenticatedRequest, res: Response) => {
+  const { channelId } = req.params as { channelId: string }
+  const channel = await channelServices.updateChannel(BigInt(channelId), req.body as UpdateChannelBody)
+
+  // Emit socket event để các client khác cập nhật
+  io?.to(Socket_Room.channel(channelId.toString())).emit('channel_updated', {
+    channelId
   })
+
+  const response: ApiResponse<{ channel: Channel }> = {
+    message: 'Cập nhật channel thành công',
+    data: {
+      channel
+    }
+  }
+
+  res.json(response)
 }

@@ -5,6 +5,7 @@ import {
   getChannelDetailController,
   getChannelMessagesController,
   getUnreadChannelController,
+  updateChannelController,
   updateChannelNicknameController,
   updateChannelSettingsController,
   uploadFileMessageController
@@ -16,7 +17,8 @@ import { channelIdSchema } from '~/models/schemas/user.schemas'
 import {
   createChannelSchema,
   updateChannelConfigSchema,
-  updateChannelNicknameSchema
+  updateChannelNicknameSchema,
+  updateChannelSchema
 } from '../models/schemas/channel.schema'
 import { uploadMessageMiddleware } from '~/middlewares/upload.middlewares'
 const router = Router()
@@ -26,6 +28,15 @@ router.get('/unread', accessTokenValidator, asyncHandler(getUnreadChannelControl
 
 // tạo channel
 router.post('/', accessTokenValidator, validate(createChannelSchema), asyncHandler(createChannelController))
+
+// cập nhật channel (không cho update type)
+router.patch(
+  '/:channelId',
+  accessTokenValidator,
+  validateParams(channelIdSchema),
+  validate(updateChannelSchema),
+  asyncHandler(updateChannelController)
+)
 
 // upload ảnh
 router.post('/:id/upload', accessTokenValidator, uploadMessageMiddleware(), asyncHandler(uploadFileMessageController))
