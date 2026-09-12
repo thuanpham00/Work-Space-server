@@ -1,7 +1,6 @@
 import { Router } from 'express'
 import {
   changePasswordController,
-  getAllUsers,
   getMeController,
   getUserStatusController,
   loginController,
@@ -36,9 +35,6 @@ router.post('/logout', accessTokenValidator, refreshTokenValidator, asyncHandler
 
 // làm mới token
 router.post('/refresh-token', refreshTokenValidator, asyncHandler(refreshTokenController))
-
-// lấy ds tất cả user dựa trên search
-router.get('/', accessTokenValidator, asyncHandler(getAllUsers))
 
 // lấy thông tin user hiện tại
 router.get('/me', accessTokenValidator, asyncHandler(getMeController))

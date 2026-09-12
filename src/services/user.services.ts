@@ -217,48 +217,6 @@ class UserService {
     })
   }
 
-  async getAllUsers(page: string, limit: string, search: string, me_id: string) {
-    const pageNumber = Number(page) || 1
-    const limitNumber = Number(limit) + 1 || 10
-    const skip = (pageNumber - 1) * limitNumber
-    const where: any = {}
-    if (search) {
-      where.OR = [
-        { username: { contains: search } },
-        { displayName: { contains: search } },
-        { fullName: { contains: search } }
-      ]
-    }
-    const users = await databaseServices.prisma.user.findMany({
-      where: {
-        ...where,
-        id: {
-          not: BigInt(me_id)
-        }
-      },
-      skip,
-      take: limitNumber,
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        displayName: true,
-        avatar: true,
-        status: true,
-        createdAt: true,
-        fullName: true,
-        phone: true,
-        bio: true,
-        dateOfBirth: true,
-        gender: true
-      }
-    })
-    return users.map((user) => ({
-      ...user,
-      id: user.id.toString()
-    }))
-  }
-
   async getUserById(id: bigint) {
     const user = await databaseServices.prisma.user.findUnique({
       where: { id },

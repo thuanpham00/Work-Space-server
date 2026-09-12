@@ -15,7 +15,6 @@ import { ApiResponse, AuthResponse, TokenPayload, User } from '~/models/response
 import { ErrorWithStatus } from '~/constants/errors'
 import httpStatus from '~/constants/httpStatus'
 import { getUploadedFile } from '~/middlewares/upload.middlewares'
-import { ParamsDictionary } from 'express-serve-static-core'
 
 export const registerController = async (req: Request, res: Response) => {
   const body = req.body as RegisterBody
@@ -127,22 +126,6 @@ export const getMeController = async (req: AuthenticatedRequest, res: Response) 
     message: 'Lấy thông tin user thành công',
     data: {
       user: user as unknown as User
-    }
-  }
-
-  res.json(response)
-}
-
-export const getAllUsers = async (req: Request<ParamsDictionary, any, any, GetAllUsersQueryParams>, res: Response) => {
-  const { page, limit, search } = req.query
-  const { user_id: me_id } = req.decode_authorization as TokenPayload
-  const users = await userService.getAllUsers(page as string, limit as string, search as string, me_id as string)
-
-  const response: ApiResponse<{ users: User[]; total: number }> = {
-    message: 'Lấy danh sách users thành công',
-    data: {
-      users: users as unknown as User[],
-      total: users.length
     }
   }
 

@@ -17,7 +17,8 @@
     "migrate:channel-configs": "tsx src/utils/createChannelConfigs.js",
     "update:member-roles-admin": "tsx src/utils/update-member-roles-to-admin.js",
     "update:channel-config-background": "tsx src/utils/update-channel-config-background.ts",
-    "seed:channel-member-nicknames": "tsx src/utils/seed-channel-member-nicknames.ts"
+    "seed:channel-member-nicknames": "tsx src/utils/seed-channel-member-nicknames.ts",
+    "rename:default-workspaces": "tsx src/utils/rename-default-workspaces.ts"
   },
   "keywords": [],
   "author": "",

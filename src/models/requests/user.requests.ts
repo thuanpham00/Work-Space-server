@@ -9,4 +9,5 @@ export interface GetAllUsersQueryParams {
   page?: string
   limit?: string
   search?: string
+  type?: 'all' | 'users' | 'workspaces'
 }
