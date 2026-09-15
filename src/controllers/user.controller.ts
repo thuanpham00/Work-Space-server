@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Request, Response } from 'express'
 import fs from 'fs'
 import userService from '../services/user.services'
@@ -10,7 +9,7 @@ import {
   LoginBody,
   ChangePasswordBody
 } from '../models/schemas/user.schemas'
-import { AuthenticatedRequest, GetAllUsersQueryParams } from '../models/requests/user.requests'
+import { AuthenticatedRequest } from '../models/requests/user.requests'
 import { ApiResponse, AuthResponse, TokenPayload, User } from '~/models/responses/user.responses'
 import { ErrorWithStatus } from '~/constants/errors'
 import httpStatus from '~/constants/httpStatus'

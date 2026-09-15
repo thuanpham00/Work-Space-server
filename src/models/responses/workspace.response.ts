@@ -20,3 +20,27 @@ export interface Workspace {
   updatedAt: string
   categories?: WorkspaceCategory[]
 }
+
+export enum WorkspaceMemberStatus {
+  ACTIVE = 'ACTIVE',
+  PENDING_INVITE = 'PENDING_INVITE',
+  PENDING_REQUEST = 'PENDING_REQUEST',
+  REJECTED = 'REJECTED',
+  LEFT = 'LEFT',
+  CANCELLED = 'CANCELLED'
+}
+
+export interface WorkspaceMember {
+  workspaceId: string
+  userId: string
+  role: string
+  status: WorkspaceMemberStatus
+  joinedAt: string | null
+  invitedAt: string | null
+  acceptedAt: string | null
+  rejectedAt: string | null
+  invitedById: string | null
+  requestedById: string
+  approvedById: string | null
+  approvedByType: string | null
+}

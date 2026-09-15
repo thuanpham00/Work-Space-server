@@ -194,20 +194,16 @@ model WorkspaceMember {
   status      WorkspaceMemberStatus @default(PENDING_INVITE)
 
   // Timestamps
-  joinedAt   DateTime? @map("joined_at")
-  invitedAt  DateTime? @map("invited_at")
-  acceptedAt DateTime? @map("accepted_at")
-  rejectedAt DateTime? @map("rejected_at")
-  expiresAt  DateTime? @map("expires_at")
+  joinedAt    DateTime? @map("joined_at")
+  invitedAt   DateTime? @map("invited_at")
+  acceptedAt  DateTime? @map("accepted_at")
+  rejectedAt  DateTime? @map("rejected_at")
 
   // Người liên quan
   invitedById    BigInt?       @map("invited_by_id")
   requestedById  BigInt?       @map("requested_by_id")
   approvedById   BigInt?       @map("approved_by_id")
   approvedByType ApproverType? @map("approved_by_type")
-
-  // Lý do & tin nhắn
-  inviteMessage String? @map("invite_message") @db.Text
 
   // Relations
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade, map: "workspace_members_workspace_id_fkey")
@@ -219,7 +215,6 @@ model WorkspaceMember {
   @@id([workspaceId, userId])
   @@index([userId])
   @@index([workspaceId, status])
-  @@index([status, expiresAt])
   @@map("workspace_members")
 }
 
