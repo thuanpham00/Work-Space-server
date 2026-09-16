@@ -6,6 +6,7 @@ import { Request } from 'express'
 import { JsonWebTokenError } from 'jsonwebtoken'
 import { FriendStatus, FriendStatusRequest } from '~/constants/enum'
 import databaseServices from '~/services/database.services'
+import { WorkspaceMemberStatus } from '~/models/responses/workspace.response'
 
 export const verifyAccessToken = async (access_token: string, req?: Request) => {
   if (!access_token) {
@@ -95,4 +96,26 @@ export const buildFriendStatusMap = async (
   }
 
   return map
+}
+
+export const buildWorkspaceMemberMap = async (meId: bigint, otherWorkspaceIds: bigint[]) => {
+  const existingMember = await databaseServices.prisma.workspaceMember.findMany({
+    where: {
+      workspaceId: {
+        in: otherWorkspaceIds.map((w) => w)
+      },
+      userId: BigInt(meId)
+    },
+    select: {
+      status: true,
+      workspaceId: true
+    }
+  })
+
+  const workspaceMemberMap = new Map<string, WorkspaceMemberStatus>()
+  for (const member of existingMember) {
+    workspaceMemberMap.set(member.workspaceId.toString(), member.status as WorkspaceMemberStatus)
+  }
+
+  return workspaceMemberMap
 }

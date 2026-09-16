@@ -41,7 +41,7 @@ class Workspace {
   async getWorkspacesOfUser(userId: bigint): Promise<WorkspaceResponse[]> {
     const workspaces = await databaseServices.prisma.workspace.findMany({
       where: {
-        OR: [{ ownerId: userId }, { members: { some: { userId } } }]
+        OR: [{ ownerId: userId }, { members: { some: { userId, status: WorkspaceMemberStatus.ACTIVE } } }]
       },
       include: {
         categories: {
@@ -218,6 +218,58 @@ class Workspace {
     })
 
     return newMember
+  }
+
+  /**
+   * User rút yêu cầu tham gia workspace
+   * - Chỉ có thể hủy khi status là PENDING_REQUEST
+   * - Không được hủy nếu là PENDING_INVITE (phải từ chối invite)
+   */
+  async cancelJoinRequest(workspaceId: bigint, userId: bigint) {
+    const existingMember = await databaseServices.prisma.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId,
+          userId
+        }
+      }
+    })
+
+    if (!existingMember) {
+      throw new ErrorWithStatus({
+        message: 'Bạn chưa có yêu cầu tham gia workspace này',
+        status: httpStatus.NOTFOUND
+      })
+    }
+
+    if (existingMember.status === WorkspaceMemberStatus.PENDING_INVITE) {
+      throw new ErrorWithStatus({
+        message: 'Bạn có lời mời tham gia workspace này, không thể hủy yêu cầu. Vui lòng từ chối lời mời.',
+        status: httpStatus.BAD_REQUESTED
+      })
+    }
+
+    if (existingMember.status !== WorkspaceMemberStatus.PENDING_REQUEST) {
+      throw new ErrorWithStatus({
+        message: 'Không thể hủy yêu cầu tham gia vì trạng thái không hợp lệ',
+        status: httpStatus.BAD_REQUESTED
+      })
+    }
+
+    const updatedMember = await databaseServices.prisma.workspaceMember.update({
+      where: {
+        workspaceId_userId: {
+          workspaceId,
+          userId
+        }
+      },
+      data: {
+        status: WorkspaceMemberStatus.CANCELLED,
+        requestedById: null
+      }
+    })
+
+    return updatedMember
   }
 }
 

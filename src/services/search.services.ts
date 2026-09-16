@@ -1,7 +1,6 @@
 import databaseServices from '~/services/database.services'
 import { Prisma } from '~/generated/prisma/client'
-import { FriendStatusRequest } from '~/constants/enum'
-import { buildFriendStatusMap, normalizeSearchParams } from '~/utils/utils'
+import { buildFriendStatusMap, buildWorkspaceMemberMap, normalizeSearchParams } from '~/utils/utils'
 
 export type SearchType = 'all' | 'users' | 'workspaces'
 
@@ -45,25 +44,6 @@ const stableWorkspaceOrder: Prisma.WorkspaceOrderByWithRelationInput[] = [{ crea
 
 type UserRow = Prisma.UserGetPayload<{ select: typeof userSelect }>
 type WorkspaceRow = Prisma.WorkspaceGetPayload<{ select: typeof workspaceSelect }>
-type FriendStatusMap = Map<string, FriendStatusRequest | null>
-
-function toUserItem(user: UserRow, friendStatusMap: FriendStatusMap) {
-  return {
-    ...user,
-    id: user.id.toString(),
-    type: 'user' as const,
-    friendStatus: friendStatusMap.get(user.id.toString()) ?? null
-  }
-}
-
-function toWorkspaceItem(workspace: WorkspaceRow) {
-  return {
-    ...workspace,
-    id: workspace.id.toString(),
-    ownerId: workspace.ownerId ? workspace.ownerId.toString() : null,
-    type: 'workspace' as const
-  }
-}
 
 function paginate(skip: number, limit: number, totals: { users: number; workspaces: number }) {
   const userSkip = Math.min(skip, totals.users)
@@ -119,7 +99,14 @@ class SearchService {
       users.map((u) => u.id)
     )
     return {
-      items: users.map((u) => toUserItem(u, friendStatusMap)),
+      items: users.map((user) => {
+        return {
+          ...user,
+          id: user.id.toString(),
+          type: 'user' as const,
+          friendStatus: friendStatusMap.get(user.id.toString()) ?? null
+        }
+      }),
       page: pageNumber,
       limit: limitNumber,
       total: totalUsers,
@@ -131,7 +118,8 @@ class SearchService {
     workspaceWhere: Prisma.WorkspaceWhereInput,
     pageNumber: number,
     limitNumber: number,
-    skip: number
+    skip: number,
+    meId: bigint
   ) {
     const [totalWorkspaces, workspaces] = await Promise.all([
       databaseServices.prisma.workspace.count({ where: workspaceWhere }),
@@ -143,8 +131,22 @@ class SearchService {
         select: workspaceSelect
       })
     ])
+
+    const workspaceMemberMap = await buildWorkspaceMemberMap(
+      meId,
+      workspaces.map((w) => w.id)
+    )
+
     return {
-      items: workspaces.map(toWorkspaceItem),
+      items: workspaces.map((workspace) => {
+        return {
+          ...workspace,
+          id: workspace.id.toString(),
+          ownerId: workspace.ownerId ? workspace.ownerId.toString() : null,
+          type: 'workspace' as const,
+          workspaceStatus: workspaceMemberMap.get(workspace.id.toString()) ?? null
+        }
+      }),
       page: pageNumber,
       limit: limitNumber,
       total: totalWorkspaces,
@@ -167,7 +169,7 @@ class SearchService {
     }
 
     if (type === 'workspaces') {
-      return this.searchWorkspacesOnly(workspaceWhere, pageNumber, limitNumber, skip)
+      return this.searchWorkspacesOnly(workspaceWhere, pageNumber, limitNumber, skip, meIdBig)
     }
 
     if (!searchTerm) {
@@ -210,7 +212,31 @@ class SearchService {
       me_id,
       users.map((u) => u.id)
     )
-    const merged = [...users.map((u) => toUserItem(u, friendStatusMap)), ...workspaces.map(toWorkspaceItem)]
+
+    const workspaceMemberMap = await buildWorkspaceMemberMap(
+      meIdBig,
+      workspaces.map((u) => u.id)
+    )
+
+    const merged = [
+      ...users.map((user) => {
+        return {
+          ...user,
+          id: user.id.toString(),
+          type: 'user' as const,
+          friendStatus: friendStatusMap.get(user.id.toString()) ?? null
+        }
+      }),
+      ...workspaces.map((w) => {
+        return {
+          ...w,
+          id: w.id.toString(),
+          ownerId: w.ownerId ? w.ownerId.toString() : null,
+          type: 'workspace' as const,
+          workspaceStatus: workspaceMemberMap.get(w.id.toString()) ?? null
+        }
+      })
+    ]
 
     return {
       items: merged,

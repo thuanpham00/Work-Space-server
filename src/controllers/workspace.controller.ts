@@ -79,3 +79,24 @@ export const requestInviteToWorkspaceController = async (req: AuthenticatedReque
 
   res.json(response)
 }
+
+export const cancelJoinRequestController = async (req: AuthenticatedRequest, res: Response) => {
+  const { workspaceId } = req.params
+  const { user_id } = req.decode_authorization as TokenPayload
+
+  if (!workspaceId || !user_id) {
+    throw new ErrorWithStatus({
+      message: 'Thiếu thông tin workspaceId hoặc userId',
+      status: httpStatus.BAD_REQUESTED
+    })
+  }
+
+  const result = await workspaceServices.cancelJoinRequest(BigInt(workspaceId as string), BigInt(user_id))
+
+  const response: ApiResponse<{ workspaceMember: WorkspaceMember }> = {
+    message: 'Hủy yêu cầu tham gia workspace thành công',
+    data: { workspaceMember: result as unknown as WorkspaceMember }
+  }
+
+  res.json(response)
+}

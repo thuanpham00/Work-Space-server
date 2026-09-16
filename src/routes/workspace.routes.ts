@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import {
+  cancelJoinRequestController,
   getWorkspaceDetailController,
   getWorkspaceMemberStatusController,
   getWorkspaceUserController,
@@ -21,6 +22,9 @@ router.get('/:id', accessTokenValidator, asyncHandler(getWorkspaceDetailControll
 router.get('/:workspaceId/status', accessTokenValidator, asyncHandler(getWorkspaceMemberStatusController))
 
 router.post('/:workspaceId/request-invite', accessTokenValidator, asyncHandler(requestInviteToWorkspaceController))
+
+// rút yêu cầu tham gia workspace
+router.delete('/:workspaceId/request-invite', accessTokenValidator, asyncHandler(cancelJoinRequestController))
 
 // CRUD category của workspace
 router.use('/categories', categoryChannelRoutes)
