@@ -2,7 +2,7 @@ import { Response } from 'express'
 import { ErrorWithStatus } from '~/constants/errors'
 import httpStatus from '~/constants/httpStatus'
 import { AuthenticatedRequest } from '~/models/requests/user.requests'
-import { FriendDMChannelResponse, FriendResponse } from '~/models/responses/friend.responses'
+import { FriendDMChannelResponse, FriendResponse, FriendStatusCountResponse } from '~/models/responses/friend.responses'
 import { ApiResponse, TokenPayload } from '~/models/responses/user.responses'
 import friendServices from '~/services/friend.services'
 
@@ -93,4 +93,17 @@ export const rejectFriendController = async (req: AuthenticatedRequest, res: Res
   res.json({
     message: 'Từ chối kết bạn thành công'
   })
+}
+
+export const getAllFriendsStatusController = async (req: AuthenticatedRequest, res: Response) => {
+  const { user_id } = req.decode_authorization as TokenPayload
+
+  const statusCount = await friendServices.countFriendsStatus(BigInt(user_id))
+
+  const response: ApiResponse<FriendStatusCountResponse> = {
+    message: 'Lấy số lượng trạng thái bạn bè thành công',
+    data: statusCount
+  }
+
+  res.json(response)
 }

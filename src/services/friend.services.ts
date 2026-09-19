@@ -103,6 +103,30 @@ class FriendService {
     })
   }
 
+  async countFriendsStatus(userId: bigint) {
+    const [sent, received, accepted] = await Promise.all([
+      databaseServices.prisma.friend.count({
+        where: {
+          requesterId: userId,
+          status: FriendStatus.PENDING
+        }
+      }),
+      databaseServices.prisma.friend.count({
+        where: {
+          addresseeId: userId,
+          status: FriendStatus.PENDING
+        }
+      }),
+      databaseServices.prisma.friend.count({
+        where: {
+          status: FriendStatus.ACCEPTED,
+          OR: [{ requesterId: userId }, { addresseeId: userId }]
+        }
+      })
+    ])
+    return { sent, received, accepted }
+  }
+
   async getAllChannelsFriends(userId: bigint, search: string) {
     const keyword = search.trim()
     const friendSearch = keyword

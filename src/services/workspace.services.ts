@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { WorkspaceMemberRole } from '~/constants/enum'
 import { ErrorWithStatus } from '~/constants/errors'
 import httpStatus from '~/constants/httpStatus'
 import { Channel } from '~/models/responses/channel.response'
@@ -65,6 +66,143 @@ class Workspace {
         createdAt: workspace.createdAt.toISOString(),
         updatedAt: workspace.updatedAt.toISOString(),
         categories
+      }
+    })
+  }
+
+  async getWorkspaceMembers(workspaceId: bigint, currentUserId: string, search: string, page: number, limit: number) {
+    const keyword = search.trim()
+
+    const me = await databaseServices.prisma.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId, userId: BigInt(currentUserId) } }
+    })
+
+    const isActiveMember = me && me.status === WorkspaceMemberStatus.ACTIVE
+
+    if (!isActiveMember) {
+      throw new ErrorWithStatus({
+        message: 'Bạn không có quyền xem danh sách thành viên workspace này',
+        status: httpStatus.FORBIDDEN
+      })
+    }
+
+    const where: any = {
+      workspaceId,
+      status: WorkspaceMemberStatus.ACTIVE
+    }
+
+    if (keyword) {
+      where.user = {
+        OR: [
+          { username: { contains: keyword, mode: 'insensitive' } },
+          { fullName: { contains: keyword, mode: 'insensitive' } }
+        ]
+      }
+    }
+
+    const [members, total] = await Promise.all([
+      databaseServices.prisma.workspaceMember.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              avatar: true,
+              fullName: true,
+              status: true
+            }
+          }
+        },
+        orderBy: { joinedAt: 'asc' },
+        skip: (page - 1) * limit,
+        take: limit
+      }),
+      databaseServices.prisma.workspaceMember.count({ where })
+    ])
+
+    return {
+      members: members.map((m) => ({
+        id: m.user.id.toString(),
+        username: m.user.username,
+        avatar: m.user.avatar,
+        fullName: m.user.fullName,
+        status: m.user.status,
+        role: m.role,
+        joinedAt: m.joinedAt?.toISOString() ?? null
+      })),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    }
+  }
+
+  async getWorkspaceRequests(workspaceId: bigint, currentUserId: string) {
+    const me = await databaseServices.prisma.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId, userId: BigInt(currentUserId) } }
+    })
+
+    const isAdmin =
+      me &&
+      me.status === WorkspaceMemberStatus.ACTIVE &&
+      (me.role === WorkspaceMemberRole.OWNER || me.role === WorkspaceMemberRole.ADMIN)
+
+    if (!isAdmin) {
+      throw new ErrorWithStatus({
+        message: 'Bạn không có quyền xem danh sách lời mời / yêu cầu tham gia',
+        status: httpStatus.FORBIDDEN
+      })
+    }
+
+    const requests = await databaseServices.prisma.workspaceMember.findMany({
+      where: {
+        workspaceId,
+        status: {
+          in: [WorkspaceMemberStatus.PENDING_INVITE, WorkspaceMemberStatus.PENDING_REQUEST]
+        }
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            displayName: true,
+            avatar: true,
+            fullName: true,
+            status: true
+          }
+        }
+      },
+      orderBy: { invitedAt: 'desc' }
+    })
+
+    const inviterIds = [
+      ...new Set(requests.map((r) => r.invitedById).filter((id): id is bigint => id !== null))
+    ]
+    const inviters = inviterIds.length
+      ? await databaseServices.prisma.user.findMany({
+          where: { id: { in: inviterIds } },
+          select: { id: true, displayName: true, username: true }
+        })
+      : []
+    const inviterMap = new Map(inviters.map((u) => [u.id.toString(), u]))
+
+    return requests.map((r) => {
+      const inviter = r.invitedById ? inviterMap.get(r.invitedById.toString()) : null
+      return {
+        userId: r.user.id.toString(),
+        username: r.user.username,
+        avatar: r.user.avatar,
+        fullName: r.user.fullName,
+        status: r.user.status,
+        role: r.role,
+        type: r.status === WorkspaceMemberStatus.PENDING_INVITE ? 'invite' : 'join',
+        invitedById: r.invitedById?.toString() ?? null,
+        invitedByName: inviter?.displayName ?? inviter?.username ?? null,
+        requestedById: r.requestedById?.toString() ?? null,
+        invitedAt: r.invitedAt?.toISOString() ?? null,
+        joinedAt: null
       }
     })
   }

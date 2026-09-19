@@ -18,7 +18,8 @@
     "update:member-roles-admin": "tsx src/utils/update-member-roles-to-admin.js",
     "update:channel-config-background": "tsx src/utils/update-channel-config-background.ts",
     "seed:channel-member-nicknames": "tsx src/utils/seed-channel-member-nicknames.ts",
-    "rename:default-workspaces": "tsx src/utils/rename-default-workspaces.ts"
+    "rename:default-workspaces": "tsx src/utils/rename-default-workspaces.ts",
+    "seed:user-settings": "tsx src/utils/seed-user-settings.ts"
   },
   "keywords": [],
   "author": "",

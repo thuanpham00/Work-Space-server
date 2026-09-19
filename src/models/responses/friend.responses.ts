@@ -8,6 +8,12 @@ export interface FriendResponse {
   createdAt: string
 }
 
+export interface FriendStatusCountResponse {
+  sent: number
+  received: number
+  accepted: number
+}
+
 export interface FriendDMChannelResponse {
   id: string
   channelId: string

@@ -4,6 +4,7 @@ import {
   addFriendController,
   getAllFriendsChannelsController,
   getAllFriendsController,
+  getAllFriendsStatusController,
   rejectFriendController
 } from '~/controllers/friend.controller'
 import { accessTokenValidator } from '~/middlewares/auth.middlewares'
@@ -17,6 +18,9 @@ router.get('/', accessTokenValidator, validateQuery(friendSchema), asyncHandler(
 
 // lấy danh sách channel của bạn bè đã accept
 router.get('/channels', accessTokenValidator, asyncHandler(getAllFriendsChannelsController))
+
+// lấy danh sách trạng thái bạn bè
+router.get('/status/count', accessTokenValidator, asyncHandler(getAllFriendsStatusController))
 
 // thêm bạn bè
 router.post('/add', accessTokenValidator, validate(addFriendSchema), asyncHandler(addFriendController))

@@ -82,6 +82,13 @@ enum Gender {
   @@map("gender")
 }
 
+enum WorkspaceInvitePolicy {
+  EVERYONE     @map("everyone")
+  FRIENDS_ONLY @map("friends_only")
+
+  @@map("workspace_invite_policy")
+}
+
 model User {
   id              BigInt     @id @default(autoincrement()) // kiểu dữ liệu prisma - khóa chính - mặc định tự động tăng - kiểu trong db mysql
   email           String     @unique @db.VarChar(255)
@@ -111,6 +118,7 @@ model User {
   receivedFriendRequests Friend[]                @relation("FriendAddressee")
   pinnedMessages         PinnedMessage[]
   channelNicknames       ChannelMemberNickname[]
+  setting                UserSetting?
 
   // Thêm cho workspace member approval flow
   invitedWorkspaceMembers   WorkspaceMember[] @relation("WorkspaceMemberInviter")
@@ -383,4 +391,15 @@ model ChannelMemberNickname {
 
   @@unique([channelId, userId])
   @@map("channel_member_nicknames")
+}
+
+model UserSetting {
+  id                      String                  @id @default(uuid())
+  userId                  BigInt                  @unique
+  user                    User                    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "user_settings_user_id_fkey")
+  workspaceInvitePolicy   WorkspaceInvitePolicy   @default(EVERYONE)
+  createdAt               DateTime                @default(now()) @map("created_at")
+  updatedAt               DateTime                @updatedAt @map("updated_at")
+
+  @@map("user_settings")
 }

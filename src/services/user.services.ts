@@ -54,13 +54,23 @@ class UserService {
   }
 
   async register(payload: { email: string; password: string; username?: string }) {
-    const newUser = await databaseServices.prisma.user.create({
-      data: {
-        email: payload.email,
-        password: hashPassword(payload.password),
-        username: payload.username,
-        displayName: payload.username
-      }
+    const newUser = await databaseServices.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email: payload.email,
+          password: hashPassword(payload.password),
+          username: payload.username,
+          displayName: payload.username
+        }
+      })
+
+      await tx.userSetting.create({
+        data: {
+          userId: user.id
+        }
+      })
+
+      return user
     })
 
     // tạo workspace mặc định cho user mới đăng ký

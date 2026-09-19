@@ -3,7 +3,13 @@ import { ErrorWithStatus } from '~/constants/errors'
 import httpStatus from '~/constants/httpStatus'
 import { AuthenticatedRequest } from '~/models/requests/user.requests'
 import { ApiResponse, TokenPayload } from '~/models/responses/user.responses'
-import { Workspace, WorkspaceMember } from '~/models/responses/workspace.response'
+import {
+  PaginatedMembers,
+  Workspace,
+  WorkspaceMember,
+  WorkspaceRequestItem,
+  WorkspaceRequestsResponse
+} from '~/models/responses/workspace.response'
 import workspaceServices from '~/services/workspace.services'
 
 export const getWorkspaceUserController = async (req: AuthenticatedRequest, res: Response) => {
@@ -32,6 +38,66 @@ export const getWorkspaceDetailController = async (req: AuthenticatedRequest, re
     data: {
       workspace: workspaces
     }
+  }
+
+  res.json(response)
+}
+
+export const getWorkspaceMembersController = async (req: AuthenticatedRequest, res: Response) => {
+  const { workspaceId } = req.params
+  const { user_id } = req.decode_authorization as TokenPayload
+  const {
+    search = '',
+    page = '1',
+    limit = '20'
+  } = req.query as {
+    search?: string
+    page?: string
+    limit?: string
+  }
+
+  if (!workspaceId) {
+    throw new ErrorWithStatus({
+      message: 'Thiếu workspaceId',
+      status: httpStatus.BAD_REQUESTED
+    })
+  }
+
+  const data = await workspaceServices.getWorkspaceMembers(
+    BigInt(workspaceId as string),
+    user_id,
+    search,
+    Number(page) || 1,
+    Number(limit) || 20
+  )
+
+  const response: ApiResponse<PaginatedMembers> = {
+    message: 'Lấy danh sách thành viên workspace thành công',
+    data: data as unknown as PaginatedMembers
+  }
+
+  res.json(response)
+}
+
+export const getWorkspaceRequestsController = async (req: AuthenticatedRequest, res: Response) => {
+  const { workspaceId } = req.params
+  const { user_id } = req.decode_authorization as TokenPayload
+
+  if (!workspaceId) {
+    throw new ErrorWithStatus({
+      message: 'Thiếu workspaceId',
+      status: httpStatus.BAD_REQUESTED
+    })
+  }
+
+  const requests = await workspaceServices.getWorkspaceRequests(BigInt(workspaceId as string), user_id)
+
+  const inviteCount = requests.filter((r) => r.type === 'invite').length
+  const joinCount = requests.filter((r) => r.type === 'join').length
+
+  const response: ApiResponse<WorkspaceRequestsResponse> = {
+    message: 'Lấy danh sách lời mời và yêu cầu tham gia thành công',
+    data: { requests: requests as unknown as WorkspaceRequestItem[], inviteCount, joinCount }
   }
 
   res.json(response)
