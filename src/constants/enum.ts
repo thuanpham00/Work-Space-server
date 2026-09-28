@@ -25,12 +25,16 @@ export enum ChannelMemberRole {
   MEMBER = 'MEMBER'
 }
 
-export enum UserStatus {
+export enum WorkMode {
   ONLINE = 'ONLINE',
   OFFLINE = 'OFFLINE',
   AWAY = 'AWAY',
   BUSY = 'BUSY'
 }
+
+// Backward-compatible alias
+export const UserStatus = WorkMode
+export type UserStatus = WorkMode
 
 export enum MessageType {
   TEXT = 'TEXT',
@@ -55,4 +59,9 @@ export enum Gender {
   MALE = 'MALE',
   FEMALE = 'FEMALE',
   OTHER = 'OTHER'
+}
+
+export enum WorkspaceInvitePolicy {
+  EVERYONE = 'EVERYONE',
+  FRIENDS_ONLY = 'FRIENDS_ONLY'
 }

@@ -73,7 +73,6 @@ class FriendService {
             username: true,
             displayName: true,
             avatar: true,
-            status: true,
             fullName: true,
             createdAt: true
           }
@@ -84,7 +83,6 @@ class FriendService {
             username: true,
             displayName: true,
             avatar: true,
-            status: true,
             fullName: true,
             createdAt: true
           }
@@ -181,7 +179,6 @@ class FriendService {
                     username: true,
                     displayName: true,
                     avatar: true,
-                    status: true,
                     fullName: true,
                     createdAt: true
                   }
@@ -206,7 +203,6 @@ class FriendService {
             username: true,
             displayName: true,
             avatar: true,
-            status: true,
             fullName: true
           }
         }

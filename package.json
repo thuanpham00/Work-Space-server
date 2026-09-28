@@ -19,7 +19,10 @@
     "update:channel-config-background": "tsx src/utils/update-channel-config-background.ts",
     "seed:channel-member-nicknames": "tsx src/utils/seed-channel-member-nicknames.ts",
     "rename:default-workspaces": "tsx src/utils/rename-default-workspaces.ts",
-    "seed:user-settings": "tsx src/utils/seed-user-settings.ts"
+    "seed:user-settings": "tsx src/utils/seed-user-settings.ts",
+    "backfill:owner-workspace-members": "tsx src/utils/backfill-owner-workspace-members.ts",
+    "db:add-workspace-invite-indexes": "tsx src/utils/add-workspace-invite-indexes.ts",
+    "seed:workspace-invites": "tsx src/utils/seed-workspace-invites.ts"
   },
   "keywords": [],
   "author": "",

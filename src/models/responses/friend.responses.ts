@@ -3,7 +3,6 @@ export interface FriendResponse {
   username: string
   displayName: string
   avatar: null
-  status: string
   fullName: string
   createdAt: string
 }
@@ -28,7 +27,6 @@ export interface FriendDMChannelResponse {
     username: string
     displayName: string
     avatar: string | null
-    status: string
     fullName: string
     createdAt: string
   } | null
@@ -47,7 +45,6 @@ export interface FriendDMChannelResponse {
       username: string
       displayName: string
       avatar: string | null
-      status: string
       fullName: string
     }
   } | null

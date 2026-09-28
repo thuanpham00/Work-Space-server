@@ -4,6 +4,8 @@ import httpStatus from '~/constants/httpStatus'
 import { AuthenticatedRequest } from '~/models/requests/user.requests'
 import { ApiResponse, TokenPayload } from '~/models/responses/user.responses'
 import {
+  InviteLinkData,
+  InviteSearchUserItem,
   PaginatedMembers,
   Workspace,
   WorkspaceMember,
@@ -29,7 +31,8 @@ export const getWorkspaceUserController = async (req: AuthenticatedRequest, res:
 
 export const getWorkspaceDetailController = async (req: AuthenticatedRequest, res: Response) => {
   const { id: workspaceId } = req.params
-  const workspaces = await workspaceServices.getWorkSpaceDetail(BigInt(workspaceId as string))
+  const { user_id } = req.decode_authorization as TokenPayload
+  const workspaces = await workspaceServices.getWorkSpaceDetail(BigInt(workspaceId as string), BigInt(user_id))
 
   if (!workspaces) return res.status(404).json({ message: 'Workspace not found' })
 
@@ -46,14 +49,10 @@ export const getWorkspaceDetailController = async (req: AuthenticatedRequest, re
 export const getWorkspaceMembersController = async (req: AuthenticatedRequest, res: Response) => {
   const { workspaceId } = req.params
   const { user_id } = req.decode_authorization as TokenPayload
-  const {
-    search = '',
-    page = '1',
-    limit = '20'
-  } = req.query as {
-    search?: string
-    page?: string
-    limit?: string
+  const { search, page, limit } = req.query as {
+    search: string
+    page: string
+    limit: string
   }
 
   if (!workspaceId) {
@@ -125,6 +124,7 @@ export const getWorkspaceMemberStatusController = async (req: Request, res: Resp
   res.json(response)
 }
 
+// dành cho user
 export const requestInviteToWorkspaceController = async (req: AuthenticatedRequest, res: Response) => {
   const { workspaceId } = req.params
   const { user_id } = req.decode_authorization as TokenPayload
@@ -146,6 +146,7 @@ export const requestInviteToWorkspaceController = async (req: AuthenticatedReque
   res.json(response)
 }
 
+// dành cho user
 export const cancelJoinRequestController = async (req: AuthenticatedRequest, res: Response) => {
   const { workspaceId } = req.params
   const { user_id } = req.decode_authorization as TokenPayload
@@ -162,6 +163,168 @@ export const cancelJoinRequestController = async (req: AuthenticatedRequest, res
   const response: ApiResponse<{ workspaceMember: WorkspaceMember }> = {
     message: 'Hủy yêu cầu tham gia workspace thành công',
     data: { workspaceMember: result as unknown as WorkspaceMember }
+  }
+
+  res.json(response)
+}
+
+export const searchUsersToInviteController = async (req: AuthenticatedRequest, res: Response) => {
+  const { workspaceId } = req.params
+  const { user_id } = req.decode_authorization as TokenPayload
+  const { search, page, limit } = req.query as {
+    search: string
+    page: string
+    limit: string
+  }
+
+  if (!workspaceId || !user_id) {
+    throw new ErrorWithStatus({
+      message: 'Thiếu thông tin workspaceId hoặc userId',
+      status: httpStatus.BAD_REQUESTED
+    })
+  }
+
+  const result = await workspaceServices.searchUsersToInvite({
+    workspaceId: BigInt(workspaceId as string),
+    currentUserId: user_id,
+    searchTerm: search ?? '',
+    page: Number(page) || 1,
+    limit: Number(limit) || 20
+  })
+
+  const response: ApiResponse<{
+    items: InviteSearchUserItem[]
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+  }> = {
+    message: 'Lấy danh sách user để mời vào workspace thành công',
+    data: {
+      items: result.items as unknown as InviteSearchUserItem[],
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+      totalPages: result.totalPages
+    }
+  }
+
+  res.json(response)
+}
+
+// dành cho admin/owner
+export const inviteUserToWorkspaceController = async (req: AuthenticatedRequest, res: Response) => {
+  const { workspaceId } = req.params
+  const { user_id: inviterId } = req.decode_authorization as TokenPayload
+  const { userId: inviteeIdRaw } = req.body as { userId: string }
+
+  const result = await workspaceServices.inviteUserToWorkspace(
+    BigInt(workspaceId as string),
+    BigInt(inviterId),
+    BigInt(inviteeIdRaw)
+  )
+
+  const response: ApiResponse<{ workspaceMember: WorkspaceMember }> = {
+    message: 'Gửi lời mời tham gia workspace thành công',
+    data: { workspaceMember: result as unknown as WorkspaceMember }
+  }
+
+  res.json(response)
+}
+
+// dành cho admin/owner
+export const cancelInviteController = async (req: AuthenticatedRequest, res: Response) => {
+  const { workspaceId } = req.params
+  const { user_id: inviterId } = req.decode_authorization as TokenPayload
+  const { userId: inviteeIdRaw } = req.body as { userId: string }
+
+  const result = await workspaceServices.cancelInvite(
+    BigInt(workspaceId as string),
+    BigInt(inviterId),
+    BigInt(inviteeIdRaw)
+  )
+
+  const response: ApiResponse<{ workspaceMember: WorkspaceMember }> = {
+    message: 'Hủy lời mời tham gia workspace thành công',
+    data: { workspaceMember: result as unknown as WorkspaceMember }
+  }
+
+  res.json(response)
+}
+
+export const getActiveInviteLinkController = async (req: AuthenticatedRequest, res: Response) => {
+  const { workspaceId } = req.params
+
+  const data = await workspaceServices.getActiveInviteLink(BigInt(workspaceId as string))
+
+  const response: ApiResponse<InviteLinkData> = {
+    message: data ? 'OK' : 'Workspace chưa có link mời đang hoạt động',
+    data: data
+  }
+
+  res.json(response)
+}
+
+export const createInviteLinkController = async (req: AuthenticatedRequest, res: Response) => {
+  const { workspaceId } = req.params
+  const { user_id } = req.decode_authorization as TokenPayload
+  const { ttlSeconds } = req.body as { ttlSeconds?: number | null }
+
+  if (!workspaceId || !user_id) {
+    throw new ErrorWithStatus({
+      message: 'Thiếu thông tin workspaceId hoặc userId',
+      status: httpStatus.BAD_REQUESTED
+    })
+  }
+
+  const invite = await workspaceServices.createInviteLink(BigInt(workspaceId as string), BigInt(user_id), ttlSeconds)
+
+  const response: ApiResponse<{
+    code: string
+    url: string
+    expiresAt: string | null
+    createdAt: string
+  }> = {
+    message: 'Tạo link mời thành công',
+    data: {
+      code: invite.code,
+      url: `${process.env.FRONTEND_URL ?? 'http://localhost:5173'}/invite/${invite.code}`,
+      expiresAt: invite.expiresAt ? invite.expiresAt.toISOString() : null,
+      createdAt: invite.createdAt.toISOString()
+    }
+  }
+
+  res.json(response)
+}
+
+export const revokeInviteLinkController = async (req: AuthenticatedRequest, res: Response) => {
+  const { workspaceId, code } = req.params
+  const { user_id } = req.decode_authorization as TokenPayload
+
+  if (!workspaceId || !code || !user_id) {
+    throw new ErrorWithStatus({
+      message: 'Thiếu thông tin workspaceId, code hoặc userId',
+      status: httpStatus.BAD_REQUESTED
+    })
+  }
+
+  const codeRaw = Array.isArray(code) ? code[0] : code
+  if (!codeRaw) {
+    throw new ErrorWithStatus({
+      message: 'Thiếu code',
+      status: httpStatus.BAD_REQUESTED
+    })
+  }
+
+  const invite = await workspaceServices.revokeInviteLink(BigInt(workspaceId as string), codeRaw, BigInt(user_id))
+
+  const response: ApiResponse<{ code: string; status: string; revokedAt: string | null }> = {
+    message: 'Thu hồi link thành công',
+    data: {
+      code: invite.code,
+      status: invite.status,
+      revokedAt: invite.revokedAt ? invite.revokedAt.toISOString() : null
+    }
   }
 
   res.json(response)

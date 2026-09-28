@@ -1,12 +1,23 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { signToken, verifyToken } from '~/utils/jwt'
 import databaseServices from './database.services'
-import { ChannelType, FriendStatus, FriendStatusRequest, TokenType, WorkspaceMemberRole } from '~/constants/enum'
+import {
+  ChannelMemberRole,
+  ChannelType,
+  FriendStatus,
+  FriendStatusRequest,
+  TokenType,
+  WorkspaceMemberRole
+} from '~/constants/enum'
 import { envConfig } from '~/utils/config'
 import { hashPassword } from '~/utils/scripto'
 import { ErrorWithStatus } from '~/constants/errors'
 import httpStatus from '~/constants/httpStatus'
 import { UpdateUserBody } from '~/models/schemas/user.schemas'
+import { WorkspaceMemberStatus } from '~/models/responses/workspace.response'
+import { ApproverType } from '~/generated/prisma/enums'
+import workspaceServices from '~/services/workspace.services'
 
 class UserService {
   private signAccessToken({ user_id }: { user_id: string }) {
@@ -74,7 +85,7 @@ class UserService {
     })
 
     // tạo workspace mặc định cho user mới đăng ký
-    await this.createWorkspaceForUser(newUser.id)
+    await workspaceServices.createWorkspaceForUser(newUser.id)
 
     return {
       user: {
@@ -172,61 +183,6 @@ class UserService {
     }
   }
 
-  async createWorkspaceForUser(userId: bigint) {
-    // khi user đăng ký tài khoản khởi tạo 1 workspace mặc định cho user đó và 2 channel thuộc workspace đó là general (1 kênh text và 1 kênh voice)
-    await databaseServices.prisma.workspace.create({
-      data: {
-        name: 'Workspace mặc định',
-        description: 'Workspace mặc định được tạo khi đăng ký tài khoản',
-        ownerId: userId,
-        channels: {
-          create: [
-            {
-              name: 'general',
-              description: 'Kênh chung',
-              type: ChannelType.TEXT,
-              isPrivate: false,
-              members: {
-                create: [
-                  {
-                    userId: userId,
-                    joinedAt: new Date()
-                  }
-                ]
-              }
-            },
-            {
-              name: 'voice',
-              description: 'Kênh thoại',
-              type: ChannelType.VOICE,
-              isPrivate: false,
-              members: {
-                create: [
-                  {
-                    userId: userId,
-                    joinedAt: new Date()
-                  }
-                ]
-              }
-            }
-          ]
-        },
-        members: {
-          create: [
-            {
-              userId: userId,
-              role: WorkspaceMemberRole.OWNER,
-              joinedAt: new Date()
-            }
-          ]
-        }
-      },
-      include: {
-        channels: true
-      }
-    })
-  }
-
   async getUserById(id: bigint) {
     const user = await databaseServices.prisma.user.findUnique({
       where: { id },
@@ -237,13 +193,11 @@ class UserService {
         displayName: true,
         avatar: true,
         bio: true,
-        status: true,
         createdAt: true,
         fullName: true,
         gender: true,
         phone: true,
-        dateOfBirth: true,
-        privacySettings: true
+        dateOfBirth: true
       }
     })
     if (user) {
@@ -274,8 +228,6 @@ class UserService {
     if (payload.dateOfBirth !== undefined) data.dateOfBirth = payload.dateOfBirth
     if (payload.fullName !== undefined) data.fullName = payload.fullName
     if (payload.gender !== undefined) data.gender = payload.gender
-    if (payload.status !== undefined) data.status = payload.status
-    if (payload.privacySettings !== undefined) data.privacySettings = payload.privacySettings
 
     const user = await databaseServices.prisma.user.update({
       where: { id },
@@ -291,19 +243,11 @@ class UserService {
         phone: true,
         dateOfBirth: true,
         gender: true,
-        status: true,
         createdAt: true
       }
     })
 
     return { ...user, id: user.id.toString() }
-  }
-
-  async updateUserStatus(id: bigint, status: 'ONLINE' | 'OFFLINE' | 'AWAY' | 'BUSY') {
-    return await databaseServices.prisma.user.update({
-      where: { id },
-      data: { status }
-    })
   }
 
   async changePassword(userId: bigint, oldPassword: string, newPassword: string) {
@@ -335,7 +279,6 @@ class UserService {
     }
   }
 
-  // Lấy thông tin user và trạng thái kết bạn giữa user hiện tại và user được yêu cầu
   async getInfoUserStatus(idAddress: bigint, idRequester: bigint) {
     const [user, friendship] = await Promise.all([
       databaseServices.prisma.user.findUnique({
@@ -347,13 +290,12 @@ class UserService {
           displayName: true,
           avatar: true,
           bio: true,
-          status: true,
           createdAt: true,
           fullName: true,
           gender: true,
           phone: true,
           dateOfBirth: true,
-          privacySettings: true
+          setting: true
         }
       }),
       databaseServices.prisma.friend.findFirst({
@@ -384,11 +326,77 @@ class UserService {
             : FriendStatusRequest.REQUEST_RECEIVED
       }
     }
+    const { setting, ...rest } = user
+    const response = rest
+
+    const { showEmail, showPhone, showDateOfBirth, showGender } = user.setting ?? {}
+    if (!showEmail) response.email = ''
+    if (!showPhone) response.phone = ''
+    if (!showDateOfBirth) response.dateOfBirth = ''
+    if (!showGender) response.gender = null
 
     return {
-      ...user,
+      ...response,
       id: user.id.toString(),
       friendStatus
+    }
+  }
+
+  async getUserSettings(userId: bigint) {
+    const userSetting = await databaseServices.prisma.userSetting.findUnique({
+      where: { userId }
+    })
+    return {
+      showEmail: userSetting?.showEmail ?? true,
+      showPhone: userSetting?.showPhone ?? true,
+      showDateOfBirth: userSetting?.showDateOfBirth ?? true,
+      showGender: userSetting?.showGender ?? true,
+      workMode: userSetting?.workMode ?? 'ONLINE',
+      workspaceInvitePolicy: userSetting?.workspaceInvitePolicy ?? 'EVERYONE'
+    }
+  }
+
+  async updateUserSettings(
+    userId: bigint,
+    settings: {
+      showEmail?: boolean
+      showPhone?: boolean
+      showDateOfBirth?: boolean
+      showGender?: boolean
+      workMode?: 'ONLINE' | 'OFFLINE' | 'BUSY'
+      workspaceInvitePolicy?: 'EVERYONE' | 'FRIENDS_ONLY'
+    }
+  ) {
+    const userSetting = await databaseServices.prisma.userSetting.upsert({
+      where: { userId },
+      create: {
+        userId,
+        showEmail: settings.showEmail ?? true,
+        showPhone: settings.showPhone ?? true,
+        showDateOfBirth: settings.showDateOfBirth ?? true,
+        showGender: settings.showGender ?? true,
+        workMode: settings.workMode ?? 'ONLINE',
+        workspaceInvitePolicy: settings.workspaceInvitePolicy ?? 'EVERYONE'
+      },
+      update: {
+        ...(settings.showEmail !== undefined && { showEmail: settings.showEmail }),
+        ...(settings.showPhone !== undefined && { showPhone: settings.showPhone }),
+        ...(settings.showDateOfBirth !== undefined && { showDateOfBirth: settings.showDateOfBirth }),
+        ...(settings.showGender !== undefined && { showGender: settings.showGender }),
+        ...(settings.workMode !== undefined && { workMode: settings.workMode }),
+        ...(settings.workspaceInvitePolicy !== undefined && {
+          workspaceInvitePolicy: settings.workspaceInvitePolicy
+        })
+      }
+    })
+
+    return {
+      showEmail: userSetting.showEmail,
+      showPhone: userSetting.showPhone,
+      showDateOfBirth: userSetting.showDateOfBirth,
+      showGender: userSetting.showGender,
+      workMode: userSetting.workMode,
+      workspaceInvitePolicy: userSetting.workspaceInvitePolicy
     }
   }
 }

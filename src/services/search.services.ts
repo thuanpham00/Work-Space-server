@@ -13,7 +13,6 @@ const userSelect = {
   username: true,
   displayName: true,
   avatar: true,
-  status: true,
   createdAt: true,
   fullName: true,
   phone: true,

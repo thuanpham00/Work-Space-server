@@ -24,9 +24,17 @@ export const updateUserSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày sinh phải có định dạng YYYY-MM-DD')
     .refine((v) => !isNaN(Date.parse(v)), 'Ngày sinh không hợp lệ')
     .optional()
-    .nullable(),
-  status: z.enum(['ONLINE', 'OFFLINE', 'BUSY']).optional().nullable(),
-  privacySettings: z.object().optional().nullable()
+    .nullable()
+})
+
+// Schema cho việc cập nhật user settings (privacy, work mode, invite policy)
+export const updateUserSettingsSchema = z.object({
+  showEmail: z.boolean().optional(),
+  showPhone: z.boolean().optional(),
+  showDateOfBirth: z.boolean().optional(),
+  showGender: z.boolean().optional(),
+  workMode: z.enum(['ONLINE', 'OFFLINE', 'BUSY']).optional(),
+  workspaceInvitePolicy: z.enum(['EVERYONE', 'FRIENDS_ONLY']).optional()
 })
 
 // Schema cho việc đăng nhập
@@ -56,11 +64,6 @@ export const searchUserSchema = z.object({
   q: z.string().min(1, 'Từ khóa tìm kiếm không được để trống')
 })
 
-// Schema cho việc cập nhật trạng thái
-export const updateStatusSchema = z.object({
-  status: z.enum(['ONLINE', 'OFFLINE', 'AWAY', 'BUSY'])
-})
-
 export const addFriendSchema = z.object({
   friendId: z.string().min(1, 'ID của bạn bè không được để trống')
 })
@@ -79,5 +82,5 @@ export type UpdateUserBody = z.infer<typeof updateUserSchema>
 export type LoginBody = z.infer<typeof loginSchema>
 export type ChangePasswordBody = z.infer<typeof changePasswordSchema>
 export type SearchUserQuery = z.infer<typeof searchUserSchema>
-export type UpdateStatusBody = z.infer<typeof updateStatusSchema>
 export type AddFriendBody = z.infer<typeof addFriendSchema>
+export type UpdateUserSettingsBody = z.infer<typeof updateUserSettingsSchema>

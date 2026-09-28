@@ -14,7 +14,6 @@ export interface User {
   displayName: string | null
   avatar: string | null
   fullname: string | null
-  status: UserStatus
   bio: string | null
   phone: string | null
   dateOfBirth: string | null
@@ -22,12 +21,13 @@ export interface User {
   updatedAt: Date
   gender: string | null
   friendStatus?: FriendStatusRequest | null
-  privacySettings?: {
-    showEmail: boolean
-    showPhone: boolean
-    showDateOfBirth: boolean
-    showGender: boolean
-  }
+}
+
+export interface PrivacySettings {
+  showEmail: boolean
+  showPhone: boolean
+  showDateOfBirth: boolean
+  showGender: boolean
 }
 
 export interface TokenPayload {

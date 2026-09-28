@@ -21,7 +21,6 @@ export interface MemberChannel {
   username: string
   displayName: string
   avatar: string
-  status: string
 }
 
 export interface ChannelConfig {

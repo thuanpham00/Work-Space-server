@@ -2,12 +2,13 @@ import { Router } from 'express'
 import {
   changePasswordController,
   getMeController,
+  getUserSettingsController,
   getUserStatusController,
   loginController,
   logoutController,
   refreshTokenController,
   registerController,
-  updateStatus,
+  updateUserSettingsController,
   updateUser,
   uploadImageController
 } from '../controllers/user.controller'
@@ -15,7 +16,7 @@ import { asyncHandler, validate } from '../middlewares/errorHandler.middlewares'
 import { uploadMiddleware } from '~/middlewares/upload.middlewares'
 import {
   updateUserSchema,
-  updateStatusSchema,
+  updateUserSettingsSchema,
   registerSchema,
   loginSchema,
   changePasswordSchema
@@ -39,11 +40,22 @@ router.post('/refresh-token', refreshTokenValidator, asyncHandler(refreshTokenCo
 // lấy thông tin user hiện tại
 router.get('/me', accessTokenValidator, asyncHandler(getMeController))
 
+// lấy user settings (privacy, work mode, invite policy)
+router.get('/settings', accessTokenValidator, asyncHandler(getUserSettingsController))
+
 // lấy thông tin user và trạng thái friend của user đó với user hiện tại
 router.get('/:userId/status', accessTokenValidator, asyncHandler(getUserStatusController))
 
 // cập nhật thông tin user hiện tại
 router.patch('/me', accessTokenValidator, validate(updateUserSchema), asyncHandler(updateUser))
+
+// cập nhật user settings (privacy, work mode, invite policy)
+router.patch(
+  '/settings',
+  accessTokenValidator,
+  validate(updateUserSettingsSchema),
+  asyncHandler(updateUserSettingsController)
+)
 
 // thay đổi mật khẩu
 router.post(
@@ -55,8 +67,5 @@ router.post(
 
 // upload ảnh
 router.post('/upload', accessTokenValidator, uploadMiddleware(), asyncHandler(uploadImageController))
-
-// cập nhật trạng thái user
-router.patch('/:userId/status', accessTokenValidator, validate(updateStatusSchema), asyncHandler(updateStatus))
 
 export default router

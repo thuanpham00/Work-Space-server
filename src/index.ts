@@ -11,6 +11,7 @@ import userRoutes from '~/routes/user.routes'
 import friendRoutes from '~/routes/friend.routes'
 import channelRoutes from '~/routes/channel.routes'
 import workspaceRoutes from '~/routes/workspace.routes'
+import workspaceInviteRoutes from '~/routes/workspaceInvite.routes'
 import socketRoutes from '~/routes/socket.routes'
 import searchRoutes from '~/routes/search.routes'
 import { errorHandler } from '~/middlewares/errorHandler.middlewares'
@@ -56,6 +57,7 @@ app.use('/users', userRoutes)
 app.use('/friends', friendRoutes)
 app.use('/channels', channelRoutes)
 app.use('/workspaces', workspaceRoutes)
+app.use('/workspace-invites', workspaceInviteRoutes)
 app.use('/socket', socketRoutes)
 app.use('/search', searchRoutes)
 app.use(errorHandler)

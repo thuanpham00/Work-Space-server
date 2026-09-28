@@ -1,5 +1,5 @@
 import { Channel } from '~/models/responses/channel.response'
-import { WorkspaceMemberRole, UserStatus } from '~/constants/enum'
+import { WorkspaceMemberRole } from '~/constants/enum'
 
 export interface WorkspaceMemberItem {
   id: string
@@ -7,7 +7,6 @@ export interface WorkspaceMemberItem {
   displayName: string
   avatar: string | null
   fullName: string | null
-  status: UserStatus
   role: WorkspaceMemberRole
   joinedAt: string | null
 }
@@ -25,7 +24,6 @@ export interface WorkspaceRequestItem {
   username: string
   avatar: string | null
   fullName: string | null
-  status: UserStatus
   role: WorkspaceMemberRole
   type: 'invite' | 'join'
   invitedById: string | null
@@ -59,6 +57,7 @@ export interface Workspace {
   ownerId: string | null
   createdAt: string
   updatedAt: string
+  role?: WorkspaceMemberRole
   categories?: WorkspaceCategory[]
 }
 
@@ -84,4 +83,44 @@ export interface WorkspaceMember {
   requestedById: string
   approvedById: string | null
   approvedByType: string | null
+}
+
+export type InviteDenialReason =
+  | 'OK'
+  | 'ALREADY_MEMBER'
+  | 'ALREADY_PENDING_INVITE'
+  | 'ALREADY_PENDING_REQUEST'
+  | 'FRIENDS_ONLY_POLICY'
+  | 'NO_FRIEND_REQUEST'
+
+export interface InviteSearchUserItem {
+  id: string
+  username: string | null
+  displayName: string | null
+  fullName: string | null
+  avatar: string | null
+  friendStatus: string | null
+  workspaceInvitePolicy: 'EVERYONE' | 'FRIENDS_ONLY' | null
+  existingWorkspaceStatus: WorkspaceMemberStatus | null
+  canInvite: boolean
+  reason: InviteDenialReason
+}
+
+export interface PaginatedInviteSearch {
+  items: InviteSearchUserItem[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
+export interface InviteLinkData {
+  url: string
+  expiresAt: string | null
+}
+
+export interface RevokeInviteLinkResponse {
+  code: string
+  status: string
+  revokedAt: string | null
 }

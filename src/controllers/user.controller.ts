@@ -2,13 +2,7 @@ import { Request, Response } from 'express'
 import fs from 'fs'
 import userService from '../services/user.services'
 import r2Service from '~/services/r2.services'
-import {
-  UpdateUserBody,
-  UpdateStatusBody,
-  RegisterBody,
-  LoginBody,
-  ChangePasswordBody
-} from '../models/schemas/user.schemas'
+import { UpdateUserBody, RegisterBody, LoginBody, ChangePasswordBody } from '../models/schemas/user.schemas'
 import { AuthenticatedRequest } from '../models/requests/user.requests'
 import { ApiResponse, AuthResponse, TokenPayload, User } from '~/models/responses/user.responses'
 import { ErrorWithStatus } from '~/constants/errors'
@@ -145,28 +139,6 @@ export const updateUser = async (req: AuthenticatedRequest, res: Response) => {
   res.json(response)
 }
 
-export const updateStatus = async (req: AuthenticatedRequest, res: Response) => {
-  const { userId } = req.params
-  const { status } = req.body as UpdateStatusBody
-
-  const currentUserId = req.decode_authorization.user_id
-  if (currentUserId !== userId) {
-    throw new ErrorWithStatus({
-      message: 'Bạn không có quyền cập nhật trạng thái của user này',
-      status: httpStatus.FORBIDDEN
-    })
-  }
-
-  const user = await userService.updateUserStatus(BigInt(userId as string), status)
-
-  const response: ApiResponse<User> = {
-    message: 'Cập nhật trạng thái thành công',
-    data: user as unknown as User
-  }
-
-  res.json(response)
-}
-
 export const uploadImageController = async (req: AuthenticatedRequest, res: Response) => {
   const imageFile = getUploadedFile(req, 'avatar')
 
@@ -226,6 +198,47 @@ export const getUserStatusController = async (req: Request, res: Response) => {
   const response: ApiResponse<{ user: User }> = {
     message: 'Lấy thông tin user thành công',
     data: { user: user as unknown as User }
+  }
+
+  res.json(response)
+}
+
+export const getUserSettingsController = async (req: AuthenticatedRequest, res: Response) => {
+  const { user_id } = req.decode_authorization as TokenPayload
+
+  if (!user_id) {
+    throw new ErrorWithStatus({
+      message: 'Thiếu thông tin user_id',
+      status: httpStatus.BAD_REQUESTED
+    })
+  }
+
+  const settings = await userService.getUserSettings(BigInt(user_id))
+
+  const response: ApiResponse<{ settings: typeof settings }> = {
+    message: 'Lấy thông tin settings thành công',
+    data: { settings }
+  }
+
+  res.json(response)
+}
+
+export const updateUserSettingsController = async (req: AuthenticatedRequest, res: Response) => {
+  const { user_id } = req.decode_authorization as TokenPayload
+  const payload = req.body
+
+  if (!user_id) {
+    throw new ErrorWithStatus({
+      message: 'Thiếu thông tin user_id',
+      status: httpStatus.BAD_REQUESTED
+    })
+  }
+
+  const settings = await userService.updateUserSettings(BigInt(user_id), payload)
+
+  const response: ApiResponse<{ settings: typeof settings }> = {
+    message: 'Cập nhật settings thành công',
+    data: { settings }
   }
 
   res.json(response)

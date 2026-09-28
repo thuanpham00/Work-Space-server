@@ -67,7 +67,7 @@ export const getSearchController = async (
   }> = {
     message: 'Lấy danh sách users và workspaces thành công',
     data: {
-      items: result.items as SearchResultItem[],
+      items: result.items as unknown as SearchResultItem[],
       total: result.total,
       page: result.page,
       limit: result.limit,

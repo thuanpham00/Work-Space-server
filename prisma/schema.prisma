@@ -7,13 +7,12 @@ datasource db {
   provider = "postgresql"
 }
 
-enum UserStatus {
+enum WorkMode {
   ONLINE  @map("online")
   OFFLINE @map("offline")
-  AWAY    @map("away")
   BUSY    @map("busy")
 
-  @@map("user_status")
+  @@map("work_mode")
 }
 
 enum WorkspaceMemberRole {
@@ -89,22 +88,27 @@ enum WorkspaceInvitePolicy {
   @@map("workspace_invite_policy")
 }
 
+enum WorkspaceInviteStatus {
+  ACTIVE  @map("active")
+  REVOKED @map("revoked")
+
+  @@map("workspace_invite_status")
+}
+
 model User {
-  id              BigInt     @id @default(autoincrement()) // kiểu dữ liệu prisma - khóa chính - mặc định tự động tăng - kiểu trong db mysql
-  email           String     @unique @db.VarChar(255)
-  password        String     @db.VarChar(255)
-  username        String?    @unique @db.VarChar(100)
-  displayName     String?    @map("display_name") @db.VarChar(100) // kiểu dữ liệu prisma - đổi tên column - kiểu trong db mysql
-  avatar          String?    @db.VarChar(500)
-  bio             String?    @db.Text
-  status          UserStatus @default(OFFLINE)
-  createdAt       DateTime   @default(now()) @map("created_at")
-  updatedAt       DateTime   @updatedAt @map("updated_at")
-  dateOfBirth     String?    @db.VarChar(100)
-  phone           String?    @db.VarChar(100)
-  gender          Gender?    @default(MALE)
-  fullName        String?    @db.VarChar(100)
-  privacySettings Json?      @map("privacy_settings")
+  id          BigInt   @id @default(autoincrement()) // kiểu dữ liệu prisma - khóa chính - mặc định tự động tăng - kiểu trong db mysql
+  email       String   @unique @db.VarChar(255)
+  password    String   @db.VarChar(255)
+  username    String?  @unique @db.VarChar(100)
+  displayName String?  @map("display_name") @db.VarChar(100) // kiểu dữ liệu prisma - đổi tên column - kiểu trong db mysql
+  avatar      String?  @db.VarChar(500)
+  bio         String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  dateOfBirth String?  @db.VarChar(100)
+  phone       String?  @db.VarChar(100)
+  gender      Gender?  @default(MALE)
+  fullName    String?  @db.VarChar(100)
 
   refreshTokens     RefreshToken[]
   ownedWorkspaces   Workspace[]        @relation("WorkspaceOwner")
@@ -124,6 +128,10 @@ model User {
   invitedWorkspaceMembers   WorkspaceMember[] @relation("WorkspaceMemberInviter")
   requestedWorkspaceMembers WorkspaceMember[] @relation("WorkspaceMemberRequester")
   approvedWorkspaceMembers  WorkspaceMember[] @relation("WorkspaceMemberApprover")
+
+  // Workspace invite link
+  workspaceInvitesCreated WorkspaceInvite[] @relation("WorkspaceInviteCreator")
+  workspaceInvitesRevoked WorkspaceInvite[] @relation("WorkspaceInviteRevoker")
 
   @@map("users") // Đổi tên bảng
 }
@@ -174,6 +182,7 @@ model Workspace {
   members    WorkspaceMember[]
   categories CategoryChannel[]
   channels   Channel[]
+  invites    WorkspaceInvite[]
 
   @@index([ownerId])
   @@map("workspaces")
@@ -202,10 +211,10 @@ model WorkspaceMember {
   status      WorkspaceMemberStatus @default(PENDING_INVITE)
 
   // Timestamps
-  joinedAt    DateTime? @map("joined_at")
-  invitedAt   DateTime? @map("invited_at")
-  acceptedAt  DateTime? @map("accepted_at")
-  rejectedAt  DateTime? @map("rejected_at")
+  joinedAt   DateTime? @map("joined_at")
+  invitedAt  DateTime? @map("invited_at")
+  acceptedAt DateTime? @map("accepted_at")
+  rejectedAt DateTime? @map("rejected_at")
 
   // Người liên quan
   invitedById    BigInt?       @map("invited_by_id")
@@ -224,6 +233,27 @@ model WorkspaceMember {
   @@index([userId])
   @@index([workspaceId, status])
   @@map("workspace_members")
+}
+
+model WorkspaceInvite {
+  id          BigInt                @id @default(autoincrement())
+  code        String                @unique @db.VarChar(32)
+  workspaceId BigInt                @map("workspace_id")
+  status      WorkspaceInviteStatus @default(ACTIVE)
+  expiresAt   DateTime?             @map("expires_at")
+  createdById BigInt                @map("created_by_id")
+  createdAt   DateTime              @default(now()) @map("created_at")
+  updatedAt   DateTime              @updatedAt @map("updated_at")
+  revokedAt   DateTime?             @map("revoked_at")
+  revokedById BigInt?               @map("revoked_by_id")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade, map: "workspace_invites_workspace_id_fkey")
+  createdBy User      @relation("WorkspaceInviteCreator", fields: [createdById], references: [id], onDelete: SetNull, map: "workspace_invites_created_by_id_fkey")
+  revokedBy User?     @relation("WorkspaceInviteRevoker", fields: [revokedById], references: [id], onDelete: SetNull, map: "workspace_invites_revoked_by_id_fkey")
+
+  @@index([workspaceId, status])
+  @@index([expiresAt])
+  @@map("workspace_invites")
 }
 
 model Channel {
@@ -394,12 +424,24 @@ model ChannelMemberNickname {
 }
 
 model UserSetting {
-  id                      String                  @id @default(uuid())
-  userId                  BigInt                  @unique
-  user                    User                    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "user_settings_user_id_fkey")
-  workspaceInvitePolicy   WorkspaceInvitePolicy   @default(EVERYONE)
-  createdAt               DateTime                @default(now()) @map("created_at")
-  updatedAt               DateTime                @updatedAt @map("updated_at")
+  id     BigInt @id @default(autoincrement())
+  userId BigInt @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, map: "user_settings_user_id_fkey")
+
+  // Privacy settings
+  showEmail       Boolean @default(true) @map("show_email")
+  showPhone       Boolean @default(true) @map("show_phone")
+  showDateOfBirth Boolean @default(true) @map("show_date_of_birth")
+  showGender      Boolean @default(true) @map("show_gender")
+
+  // Work mode (thay thế status ở User)
+  workMode WorkMode @default(ONLINE) @map("work_mode")
+
+  // Invite policy
+  workspaceInvitePolicy WorkspaceInvitePolicy @default(EVERYONE) @map("workspace_invite_policy")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("user_settings")
 }
