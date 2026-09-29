@@ -3,8 +3,9 @@ import { ParamsDictionary } from 'express-serve-static-core'
 import { GetAllUsersQueryParams } from '~/models/requests/user.requests'
 import { ApiResponse, TokenPayload } from '~/models/responses/user.responses'
 import { searchService, SearchType } from '~/services/search.services'
+import { MemberStatus } from '~/constants/enum'
 
-const VALID_TYPES: ReadonlyArray<SearchType> = ['all', 'users', 'workspaces']
+const VALID_TYPES: ReadonlyArray<SearchType> = ['all', 'users', 'channels']
 
 type SearchResultItem =
   | {
@@ -25,18 +26,14 @@ type SearchResultItem =
     }
   | {
       id: string
-      name: string
+      name: string | null
       description: string | null
-      avatar: string | null
-      ownerId: string | null
-      owner: {
-        id: string
-        username: string | null
-        fullName: string | null
-        avatar: string | null
-      }
-      createdAt: Date
-      type: 'workspace'
+      type: 'channel'
+      workspaceId: string | null
+      categoryId: string | null
+      workspaceName: string | null
+      workspaceOwner: string | null
+      channelMemberStatus: MemberStatus | null
     }
 
 export const getSearchController = async (
@@ -65,7 +62,7 @@ export const getSearchController = async (
     totalPages: number
     type: SearchType
   }> = {
-    message: 'Lấy danh sách users và workspaces thành công',
+    message: 'Lấy danh sách users và channels thành công',
     data: {
       items: result.items as unknown as SearchResultItem[],
       total: result.total,

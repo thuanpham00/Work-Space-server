@@ -4,7 +4,7 @@ import { envConfig } from '~/utils/config'
 import { verifyToken } from '~/utils/jwt'
 import { Request } from 'express'
 import { JsonWebTokenError } from 'jsonwebtoken'
-import { FriendStatus, FriendStatusRequest, WorkspaceInvitePolicy } from '~/constants/enum'
+import { FriendStatus, FriendStatusRequest, MemberStatus, WorkspaceInvitePolicy } from '~/constants/enum'
 import databaseServices from '~/services/database.services'
 import { WorkspaceMemberStatus } from '~/models/responses/workspace.response'
 import { randomBytes } from 'crypto'
@@ -100,26 +100,28 @@ export const buildFriendStatusMap = async (
   return map
 }
 
-export const buildWorkspaceMemberMap = async (meId: bigint, otherWorkspaceIds: bigint[]) => {
-  const existingMember = await databaseServices.prisma.workspaceMember.findMany({
+export const buildChannelMemberMap = async (
+  meId: bigint,
+  channelIds: bigint[]
+): Promise<Map<string, MemberStatus | null>> => {
+  const map = new Map<string, MemberStatus | null>()
+  if (channelIds.length === 0) return map
+
+  const members = await databaseServices.prisma.channelMember.findMany({
     where: {
-      workspaceId: {
-        in: otherWorkspaceIds.map((w) => w)
-      },
-      userId: BigInt(meId)
+      channelId: { in: channelIds },
+      userId: meId
     },
     select: {
       status: true,
-      workspaceId: true
+      channelId: true
     }
   })
 
-  const workspaceMemberMap = new Map<string, WorkspaceMemberStatus>()
-  for (const member of existingMember) {
-    workspaceMemberMap.set(member.workspaceId.toString(), member.status as WorkspaceMemberStatus)
+  for (const m of members) {
+    map.set(m.channelId.toString(), m.status as MemberStatus)
   }
-
-  return workspaceMemberMap
+  return map
 }
 
 /**
@@ -180,7 +182,7 @@ export const checkCanInvite = (params: {
 }
 
 /**
- * Generate mã invite code ngẫu nhiên, dùng cho `WorkspaceInvite.code`.
+ * Generate mã invite code ngẫu nhiên, dùng cho `ChannelInvite.code`.
  *
  * - Alphabet: chỉ gồm chữ + số, bỏ các ký tự dễ nhầm (0/O, 1/I/l) để user đọc dễ.
  * - Dùng `crypto.randomBytes` (Node built-in) thay cho `nanoid` để tránh thêm dependency.
@@ -188,7 +190,7 @@ export const checkCanInvite = (params: {
  * - Check unique trong DB với tối đa `maxRetries` lần (mặc định 5).
  */
 export async function generateUniqueInviteCode(
-  prisma: PrismaClient | { workspaceInvite: { findUnique: (args: { where: { code: string } }) => Promise<unknown> } },
+  prisma: PrismaClient | { channelInvite: { findUnique: (args: { where: { code: string } }) => Promise<unknown> } },
   maxRetries = 5
 ): Promise<string> {
   // Bỏ 0/O, 1/I/l để tránh nhầm lẫn khi đọc/nhập
@@ -204,7 +206,7 @@ export async function generateUniqueInviteCode(
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const exists = await (prisma as any).workspaceInvite.findUnique({ where: { code } })
+    const exists = await (prisma as any).channelInvite.findUnique({ where: { code } })
     if (!exists) return code
   }
 

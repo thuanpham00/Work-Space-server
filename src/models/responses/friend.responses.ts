@@ -49,3 +49,11 @@ export interface FriendDMChannelResponse {
     }
   } | null
 }
+
+export interface FriendToInviteChannel {
+  id: string
+  username: string
+  displayName: string
+  avatar: string
+  fullName: string
+}

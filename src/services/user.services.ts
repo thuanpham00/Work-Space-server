@@ -2,21 +2,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { signToken, verifyToken } from '~/utils/jwt'
 import databaseServices from './database.services'
-import {
-  ChannelMemberRole,
-  ChannelType,
-  FriendStatus,
-  FriendStatusRequest,
-  TokenType,
-  WorkspaceMemberRole
-} from '~/constants/enum'
+import { FriendStatus, FriendStatusRequest, TokenType } from '~/constants/enum'
 import { envConfig } from '~/utils/config'
 import { hashPassword } from '~/utils/scripto'
 import { ErrorWithStatus } from '~/constants/errors'
 import httpStatus from '~/constants/httpStatus'
 import { UpdateUserBody } from '~/models/schemas/user.schemas'
-import { WorkspaceMemberStatus } from '~/models/responses/workspace.response'
-import { ApproverType } from '~/generated/prisma/enums'
 import workspaceServices from '~/services/workspace.services'
 
 class UserService {

@@ -22,6 +22,7 @@
     "seed:user-settings": "tsx src/utils/seed-user-settings.ts",
     "backfill:owner-workspace-members": "tsx src/utils/backfill-owner-workspace-members.ts",
     "db:add-workspace-invite-indexes": "tsx src/utils/add-workspace-invite-indexes.ts",
+    "seed:workspaces-from-users": "tsx src/utils/seed-workspaces-from-users.ts",
     "seed:workspace-invites": "tsx src/utils/seed-workspace-invites.ts"
   },
   "keywords": [],

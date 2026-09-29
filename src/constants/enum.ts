@@ -20,6 +20,15 @@ export enum WorkspaceMemberRole {
   OWNER = 'OWNER'
 }
 
+export enum MemberStatus {
+  ACTIVE = 'ACTIVE',
+  LEFT = 'LEFT',
+  BANNED = 'BANNED',
+  PENDING_REQUEST = 'PENDING_REQUEST',
+  PENDING_INVITE = 'PENDING_INVITE',
+  CANCELED = 'CANCELED'
+}
+
 export enum ChannelMemberRole {
   ADMIN = 'ADMIN',
   MEMBER = 'MEMBER'
@@ -32,7 +41,6 @@ export enum WorkMode {
   BUSY = 'BUSY'
 }
 
-// Backward-compatible alias
 export const UserStatus = WorkMode
 export type UserStatus = WorkMode
 

@@ -64,7 +64,7 @@ app.use(errorHandler)
 
 databaseServices.connect().then(async () => {
   console.log('Connected to database')
-  await databaseServices.initAdminUser()
+  // await databaseServices.initAdminUser()
 })
 
 const httpServer = createServer(app) // tạo 1 server đựa trên app của Express

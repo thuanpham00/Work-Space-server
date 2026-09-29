@@ -1,8 +1,11 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import databaseServices from '~/services/database.services'
 import { Prisma } from '~/generated/prisma/client'
-import { buildFriendStatusMap, buildWorkspaceMemberMap, normalizeSearchParams } from '~/utils/utils'
+import { MemberStatus } from '~/constants/enum'
+import { buildChannelMemberMap, buildFriendStatusMap, normalizeSearchParams } from '~/utils/utils'
+import { ChannelType } from '~/models/responses/channel.response'
 
-export type SearchType = 'all' | 'users' | 'workspaces'
+export type SearchType = 'all' | 'users' | 'channels'
 
 const DEFAULT_LIMIT = 10
 const MAX_LIMIT = 100
@@ -21,36 +24,43 @@ const userSelect = {
   gender: true
 } as const
 
-const workspaceSelect = {
+const channelSelect = {
   id: true,
   name: true,
   description: true,
-  avatar: true,
-  ownerId: true,
-  owner: {
+  type: true,
+  workspaceId: true,
+  categoryId: true,
+  workspace: {
     select: {
       id: true,
-      username: true,
-      fullName: true,
-      avatar: true
+      name: true,
+      ownerId: true,
+      owner: {
+        select: {
+          id: true,
+          username: true,
+          fullName: true,
+          avatar: true
+        }
+      }
     }
-  },
-  createdAt: true
+  }
 } as const
 
 const stableUserOrder: Prisma.UserOrderByWithRelationInput[] = [{ createdAt: 'desc' }, { id: 'asc' }]
-const stableWorkspaceOrder: Prisma.WorkspaceOrderByWithRelationInput[] = [{ createdAt: 'desc' }, { id: 'asc' }]
+const stableChannelOrder: Prisma.ChannelOrderByWithRelationInput[] = [{ createdAt: 'desc' }, { id: 'asc' }]
 
 type UserRow = Prisma.UserGetPayload<{ select: typeof userSelect }>
-type WorkspaceRow = Prisma.WorkspaceGetPayload<{ select: typeof workspaceSelect }>
+type ChannelRow = Prisma.ChannelGetPayload<{ select: typeof channelSelect }>
 
-function paginate(skip: number, limit: number, totals: { users: number; workspaces: number }) {
+function paginate(skip: number, limit: number, totals: { users: number; channels: number }) {
   const userSkip = Math.min(skip, totals.users)
   const userTake = Math.max(0, Math.min(limit, totals.users - userSkip))
-  const workspaceTakeNeeded = limit - userTake
-  const workspaceSkip = Math.max(0, skip - totals.users)
-  const workspaceTake = Math.max(0, Math.min(workspaceTakeNeeded, totals.workspaces - workspaceSkip))
-  return { userSkip, userTake, workspaceSkip, workspaceTake }
+  const channelTakeNeeded = limit - userTake
+  const channelSkip = Math.max(0, skip - totals.users)
+  const channelTake = Math.max(0, Math.min(channelTakeNeeded, totals.channels - channelSkip))
+  return { userSkip, userTake, channelSkip, channelTake }
 }
 
 function buildUserWhere(meId: bigint, searchTerm: string): Prisma.UserWhereInput {
@@ -64,8 +74,14 @@ function buildUserWhere(meId: bigint, searchTerm: string): Prisma.UserWhereInput
   return where
 }
 
-function buildWorkspaceWhere(meId: bigint, searchTerm: string): Prisma.WorkspaceWhereInput {
-  const where: Prisma.WorkspaceWhereInput = { ownerId: { not: meId } }
+function buildChannelWhere(meId: bigint, searchTerm: string): Prisma.ChannelWhereInput {
+  // trừ những channel của chính mình
+  // trừ những channel private
+  // trừ những channel DM
+  const where: Prisma.ChannelWhereInput = {
+    NOT: { OR: [{ type: ChannelType.DM }, { members: { some: { userId: BigInt(meId) } } }] },
+    isPrivate: false
+  }
   if (searchTerm) {
     where.OR = [
       { name: { contains: searchTerm, mode: 'insensitive' } },
@@ -113,43 +129,47 @@ class SearchService {
     }
   }
 
-  async searchWorkspacesOnly(
-    workspaceWhere: Prisma.WorkspaceWhereInput,
+  async searchChannelsOnly(
+    channelWhere: Prisma.ChannelWhereInput,
+    meId: bigint,
     pageNumber: number,
     limitNumber: number,
-    skip: number,
-    meId: bigint
+    skip: number
   ) {
-    const [totalWorkspaces, workspaces] = await Promise.all([
-      databaseServices.prisma.workspace.count({ where: workspaceWhere }),
-      databaseServices.prisma.workspace.findMany({
-        where: workspaceWhere,
+    const [totalChannels, channels] = await Promise.all([
+      databaseServices.prisma.channel.count({ where: channelWhere }),
+      databaseServices.prisma.channel.findMany({
+        where: channelWhere,
         skip,
         take: limitNumber,
-        orderBy: stableWorkspaceOrder,
-        select: workspaceSelect
+        orderBy: stableChannelOrder,
+        select: channelSelect
       })
     ])
 
-    const workspaceMemberMap = await buildWorkspaceMemberMap(
+    const channelMemberMap = await buildChannelMemberMap(
       meId,
-      workspaces.map((w) => w.id)
+      channels.map((c) => c.id)
     )
 
     return {
-      items: workspaces.map((workspace) => {
+      items: channels.map((channel) => {
+        const { workspace, ...rest } = channel
         return {
-          ...workspace,
-          id: workspace.id.toString(),
-          ownerId: workspace.ownerId ? workspace.ownerId.toString() : null,
-          type: 'workspace' as const,
-          workspaceStatus: workspaceMemberMap.get(workspace.id.toString()) ?? null
+          ...rest,
+          id: channel.id.toString(),
+          workspaceId: channel.workspaceId?.toString() ?? null,
+          categoryId: channel.categoryId?.toString() ?? null,
+          workspaceName: channel.workspace?.name ?? null,
+          workspaceOwner: channel.workspace?.owner ? channel.workspace.owner.fullName : null,
+          type: 'channel' as const,
+          channelMemberStatus: (channelMemberMap.get(channel.id.toString()) as MemberStatus | null) ?? null
         }
       }),
       page: pageNumber,
       limit: limitNumber,
-      total: totalWorkspaces,
-      totalPages: Math.ceil(totalWorkspaces / limitNumber)
+      total: totalChannels,
+      totalPages: Math.ceil(totalChannels / limitNumber)
     }
   }
 
@@ -161,32 +181,32 @@ class SearchService {
 
     const meIdBig = BigInt(me_id)
     const userWhere = buildUserWhere(meIdBig, searchTerm)
-    const workspaceWhere = buildWorkspaceWhere(meIdBig, searchTerm)
+    const channelWhere = buildChannelWhere(meIdBig, searchTerm)
 
     if (type === 'users') {
       return this.searchUsersOnly(userWhere, me_id, pageNumber, limitNumber, skip)
     }
 
-    if (type === 'workspaces') {
-      return this.searchWorkspacesOnly(workspaceWhere, pageNumber, limitNumber, skip, meIdBig)
+    if (type === 'channels') {
+      return this.searchChannelsOnly(channelWhere, meIdBig, pageNumber, limitNumber, skip)
     }
 
     if (!searchTerm) {
       return this.searchUsersOnly(userWhere, me_id, pageNumber, limitNumber, skip)
     }
 
-    const [totalUsers, totalWorkspaces] = await Promise.all([
+    const [totalUsers, totalChannels] = await Promise.all([
       databaseServices.prisma.user.count({ where: userWhere }),
-      databaseServices.prisma.workspace.count({ where: workspaceWhere })
+      databaseServices.prisma.channel.count({ where: channelWhere })
     ])
-    const total = totalUsers + totalWorkspaces
+    const total = totalUsers + totalChannels
 
-    const { userSkip, userTake, workspaceSkip, workspaceTake } = paginate(skip, limitNumber, {
+    const { userSkip, userTake, channelSkip, channelTake } = paginate(skip, limitNumber, {
       users: totalUsers,
-      workspaces: totalWorkspaces
+      channels: totalChannels
     })
 
-    const [users, workspaces] = await Promise.all([
+    const [users, channels] = await Promise.all([
       userTake > 0
         ? databaseServices.prisma.user.findMany({
             where: userWhere,
@@ -196,15 +216,15 @@ class SearchService {
             select: userSelect
           })
         : Promise.resolve([] as UserRow[]),
-      workspaceTake > 0
-        ? databaseServices.prisma.workspace.findMany({
-            where: workspaceWhere,
-            skip: workspaceSkip,
-            take: workspaceTake,
-            orderBy: stableWorkspaceOrder,
-            select: workspaceSelect
+      channelTake > 0
+        ? databaseServices.prisma.channel.findMany({
+            where: channelWhere,
+            skip: channelSkip,
+            take: channelTake,
+            orderBy: stableChannelOrder,
+            select: channelSelect
           })
-        : Promise.resolve([] as WorkspaceRow[])
+        : Promise.resolve([] as ChannelRow[])
     ])
 
     const friendStatusMap = await buildFriendStatusMap(
@@ -212,9 +232,9 @@ class SearchService {
       users.map((u) => u.id)
     )
 
-    const workspaceMemberMap = await buildWorkspaceMemberMap(
+    const channelMemberMap = await buildChannelMemberMap(
       meIdBig,
-      workspaces.map((u) => u.id)
+      channels.map((c) => c.id)
     )
 
     const merged = [
@@ -226,13 +246,17 @@ class SearchService {
           friendStatus: friendStatusMap.get(user.id.toString()) ?? null
         }
       }),
-      ...workspaces.map((w) => {
+      ...channels.map((channel) => {
+        const { workspace, ...rest } = channel
         return {
-          ...w,
-          id: w.id.toString(),
-          ownerId: w.ownerId ? w.ownerId.toString() : null,
-          type: 'workspace' as const,
-          workspaceStatus: workspaceMemberMap.get(w.id.toString()) ?? null
+          ...rest,
+          id: channel.id.toString(),
+          workspaceId: channel.workspaceId?.toString() ?? null,
+          categoryId: channel.categoryId?.toString() ?? null,
+          workspaceName: channel.workspace?.name ?? null,
+          workspaceOwner: channel.workspace?.owner ? channel.workspace.owner.fullName : null,
+          type: 'channel' as const,
+          channelMemberStatus: (channelMemberMap.get(channel.id.toString()) as MemberStatus | null) ?? null
         }
       })
     ]

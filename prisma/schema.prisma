@@ -55,22 +55,15 @@ enum FriendStatus {
   @@map("friend_status")
 }
 
-enum WorkspaceMemberStatus {
-  PENDING_INVITE  @map("pending_invite")
-  PENDING_REQUEST @map("pending_request")
+enum MemberStatus {
   ACTIVE          @map("active")
-  REJECTED        @map("rejected")
   LEFT            @map("left")
-  CANCELLED       @map("cancelled")
+  BANNED          @map("banned")
+  PENDING_REQUEST @map("pending_request")
+  PENDING_INVITE  @map("pending_invite")
+  CANCELED        @map("canceled")
 
-  @@map("workspace_member_status")
-}
-
-enum ApproverType {
-  ADMIN @map("admin")
-  USER  @map("user")
-
-  @@map("approver_type")
+  @@map("member_status")
 }
 
 enum Gender {
@@ -88,7 +81,7 @@ enum WorkspaceInvitePolicy {
   @@map("workspace_invite_policy")
 }
 
-enum WorkspaceInviteStatus {
+enum ChannelInviteStatus {
   ACTIVE  @map("active")
   REVOKED @map("revoked")
 
@@ -124,14 +117,16 @@ model User {
   channelNicknames       ChannelMemberNickname[]
   setting                UserSetting?
 
-  // Thêm cho workspace member approval flow
+  // Workspace member relations
   invitedWorkspaceMembers   WorkspaceMember[] @relation("WorkspaceMemberInviter")
   requestedWorkspaceMembers WorkspaceMember[] @relation("WorkspaceMemberRequester")
-  approvedWorkspaceMembers  WorkspaceMember[] @relation("WorkspaceMemberApprover")
 
-  // Workspace invite link
-  workspaceInvitesCreated WorkspaceInvite[] @relation("WorkspaceInviteCreator")
-  workspaceInvitesRevoked WorkspaceInvite[] @relation("WorkspaceInviteRevoker")
+  // Channel member relations
+  channelInviters ChannelMember[] @relation("ChannelMemberInviter")
+
+  // Channel invite link
+  channelInvitesCreated ChannelInvite[] @relation("ChannelInviteCreator")
+  channelInvitesRevoked ChannelInvite[] @relation("ChannelInviteRevoker")
 
   @@map("users") // Đổi tên bảng
 }
@@ -182,7 +177,6 @@ model Workspace {
   members    WorkspaceMember[]
   categories CategoryChannel[]
   channels   Channel[]
-  invites    WorkspaceInvite[]
 
   @@index([ownerId])
   @@map("workspaces")
@@ -205,29 +199,25 @@ model CategoryChannel {
 }
 
 model WorkspaceMember {
-  workspaceId BigInt                @map("workspace_id")
-  userId      BigInt                @map("user_id")
-  role        WorkspaceMemberRole   @default(MEMBER)
-  status      WorkspaceMemberStatus @default(PENDING_INVITE)
+  workspaceId BigInt              @map("workspace_id")
+  userId      BigInt              @map("user_id")
+  role        WorkspaceMemberRole @default(MEMBER)
+  status      MemberStatus        @default(ACTIVE) @map("status")
 
-  // Timestamps
-  joinedAt   DateTime? @map("joined_at")
-  invitedAt  DateTime? @map("invited_at")
-  acceptedAt DateTime? @map("accepted_at")
-  rejectedAt DateTime? @map("rejected_at")
+  // joinedAt: thời điểm user chính thức gia nhập workspace
+  // (join qua invite thẳng vào channel nên gần như = createdAt của row)
+  joinedAt DateTime @default(now()) @map("joined_at")
+  invitedAt DateTime? @map("invited_at")
 
-  // Người liên quan
-  invitedById    BigInt?       @map("invited_by_id")
-  requestedById  BigInt?       @map("requested_by_id")
-  approvedById   BigInt?       @map("approved_by_id")
-  approvedByType ApproverType? @map("approved_by_type")
+  // Người liên quan (nullable, set khi có)
+  invitedById   BigInt? @map("invited_by_id")
+  requestedById BigInt? @map("requested_by_id")
 
   // Relations
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade, map: "workspace_members_workspace_id_fkey")
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade, map: "workspace_members_user_id_fkey")
   invitedBy   User?     @relation("WorkspaceMemberInviter", fields: [invitedById], references: [id], onDelete: SetNull, map: "workspace_members_invited_by_id_fkey")
   requestedBy User?     @relation("WorkspaceMemberRequester", fields: [requestedById], references: [id], onDelete: SetNull, map: "workspace_members_requested_by_id_fkey")
-  approvedBy  User?     @relation("WorkspaceMemberApprover", fields: [approvedById], references: [id], onDelete: SetNull, map: "workspace_members_approved_by_id_fkey")
 
   @@id([workspaceId, userId])
   @@index([userId])
@@ -235,11 +225,11 @@ model WorkspaceMember {
   @@map("workspace_members")
 }
 
-model WorkspaceInvite {
+model ChannelInvite {
   id          BigInt                @id @default(autoincrement())
   code        String                @unique @db.VarChar(32)
-  workspaceId BigInt                @map("workspace_id")
-  status      WorkspaceInviteStatus @default(ACTIVE)
+  channelId   BigInt                @map("channel_id")
+  status      ChannelInviteStatus @default(ACTIVE)
   expiresAt   DateTime?             @map("expires_at")
   createdById BigInt                @map("created_by_id")
   createdAt   DateTime              @default(now()) @map("created_at")
@@ -247,13 +237,13 @@ model WorkspaceInvite {
   revokedAt   DateTime?             @map("revoked_at")
   revokedById BigInt?               @map("revoked_by_id")
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade, map: "workspace_invites_workspace_id_fkey")
-  createdBy User      @relation("WorkspaceInviteCreator", fields: [createdById], references: [id], onDelete: SetNull, map: "workspace_invites_created_by_id_fkey")
-  revokedBy User?     @relation("WorkspaceInviteRevoker", fields: [revokedById], references: [id], onDelete: SetNull, map: "workspace_invites_revoked_by_id_fkey")
+  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade, map: "channel_invites_channel_id_fkey")
+  createdBy User    @relation("ChannelInviteCreator", fields: [createdById], references: [id], onDelete: SetNull, map: "channel_invites_created_by_id_fkey")
+  revokedBy User?   @relation("ChannelInviteRevoker", fields: [revokedById], references: [id], onDelete: SetNull, map: "channel_invites_revoked_by_id_fkey")
 
-  @@index([workspaceId, status])
+  @@index([channelId, status])
   @@index([expiresAt])
-  @@map("workspace_invites")
+  @@map("channel_invites")
 }
 
 model Channel {
@@ -276,6 +266,7 @@ model Channel {
   config         ChannelConfig?
   pinnedMessages PinnedMessage[]
   nicknames      ChannelMemberNickname[]
+  invites        ChannelInvite[]
 
   @@index([workspaceId])
   @@index([categoryId])
@@ -284,16 +275,21 @@ model Channel {
 }
 
 model ChannelMember {
-  channelId BigInt            @map("channel_id")
-  userId    BigInt            @map("user_id")
-  role      ChannelMemberRole @default(MEMBER)
-  joinedAt  DateTime?         @map("joined_at")
+  channelId   BigInt            @map("channel_id")
+  userId      BigInt            @map("user_id")
+  role        ChannelMemberRole @default(MEMBER)
+  status      MemberStatus      @default(ACTIVE) @map("status")
+  joinedAt    DateTime          @default(now())   @map("joined_at")
+  invitedById BigInt?           @map("invited_by_id")
 
-  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade, map: "channel_members_channel_id_fkey")
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "channel_members_user_id_fkey")
+  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade, map: "channel_members_channel_id_fkey")
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "channel_members_user_id_fkey")
+  invitedBy User?   @relation("ChannelMemberInviter", fields: [invitedById], references: [id], onDelete: SetNull, map: "channel_members_invited_by_id_fkey")
 
   @@id([channelId, userId])
   @@index([userId])
+  @@index([channelId, status])
+  @@index([invitedById])
   @@map("channel_members")
 }
 
