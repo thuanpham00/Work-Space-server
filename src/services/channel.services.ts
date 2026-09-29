@@ -17,6 +17,7 @@ import { AttachmentType } from '~/models/responses/attachment.response'
 import { ChannelInviteStatus } from '~/models/responses/channel.response'
 import { generateUniqueInviteCode } from '~/utils/utils'
 import { envConfig } from '~/utils/config'
+import type { Prisma } from '~/generated/prisma/client'
 
 class ChannelService {
   async createChannel({ categoryId, name, description, type, isPrivate, isDefault }: CreateChannelBody) {
@@ -861,31 +862,7 @@ class ChannelService {
     }
 
     return await databaseServices.prisma.$transaction(async (tx) => {
-      const workspaceMember = await tx.workspaceMember.findUnique({
-        where: { workspaceId_userId: { workspaceId: channel.workspaceId!, userId } }
-      })
-
-      if (!workspaceMember) {
-        await tx.workspaceMember.create({
-          data: {
-            workspaceId: channel.workspaceId!,
-            userId,
-            role: WorkspaceMemberRole.MEMBER,
-            status: MemberStatus.PENDING_REQUEST,
-            joinedAt: new Date()
-          }
-        })
-      } else if (workspaceMember.status !== MemberStatus.PENDING_REQUEST) {
-        // Nếu đã có row nhưng status khác (LEFT / BANNED / ACTIVE ở workspace khác…)
-        // → đồng bộ về PENDING_REQUEST cho khớp với channelMember.
-        // Admin duyệt thành công sẽ update cả 2 về ACTIVE.
-        await tx.workspaceMember.update({
-          where: { workspaceId_userId: { workspaceId: channel.workspaceId!, userId } },
-          data: { status: MemberStatus.PENDING_REQUEST, role: WorkspaceMemberRole.MEMBER }
-        })
-      }
-
-      // 2. Tạo / upsert channelMember với PENDING_REQUEST
+      // 1. Upsert channelMember với PENDING_REQUEST
       const channelMember = await tx.channelMember.upsert({
         where: { channelId_userId: { channelId, userId } },
         create: {
@@ -900,6 +877,9 @@ class ChannelService {
         }
       })
 
+      // 2. Đồng bộ workspaceMember dựa trên tập channelMember của user trong workspace
+      await syncWorkspaceMember(tx, channel.workspaceId!, userId)
+
       return {
         channelId: channelMember.channelId.toString(),
         userId: channelMember.userId.toString(),
@@ -910,6 +890,18 @@ class ChannelService {
   }
 
   async cancelJoinRequest(channelId: bigint, userId: bigint) {
+    const channel = await databaseServices.prisma.channel.findUnique({
+      where: { id: channelId },
+      select: { workspaceId: true }
+    })
+
+    if (!channel?.workspaceId) {
+      throw new ErrorWithStatus({
+        message: 'Channel không tồn tại hoặc không thuộc workspace nào',
+        status: httpStatus.NOTFOUND
+      })
+    }
+
     const existing = await databaseServices.prisma.channelMember.findUnique({
       where: { channelId_userId: { channelId, userId } }
     })
@@ -928,15 +920,108 @@ class ChannelService {
       })
     }
 
-    await databaseServices.prisma.channelMember.delete({
-      where: { channelId_userId: { channelId, userId } }
-    })
+    return await databaseServices.prisma.$transaction(async (tx) => {
+      // 1. Update channelMember → CANCELED (giữ row để audit, không xóa)
+      const channelMember = await tx.channelMember.update({
+        where: { channelId_userId: { channelId, userId } },
+        data: { status: MemberStatus.CANCELED }
+      })
 
-    return {
-      channelId: channelId.toString(),
-      userId: userId.toString(),
-      status: 'CANCELLED'
+      // 2. Đồng bộ workspaceMember
+      await syncWorkspaceMember(tx, channel.workspaceId!, userId)
+
+      return {
+        channelId: channelMember.channelId.toString(),
+        userId: channelMember.userId.toString(),
+        status: MemberStatus.CANCELED as string
+      }
+    })
+  }
+}
+
+export async function syncWorkspaceMember(
+  tx: Prisma.TransactionClient,
+  workspaceId: bigint,
+  userId: bigint
+): Promise<void> {
+  // 1. Đếm channelMember theo status (kèm join channel.workspaceId)
+  const [nActive, nPending, nBanned, nEverActive] = await Promise.all([
+    tx.channelMember.count({
+      where: {
+        userId,
+        status: MemberStatus.ACTIVE,
+        channel: { workspaceId }
+      }
+    }),
+    tx.channelMember.count({
+      where: {
+        userId,
+        status: { in: [MemberStatus.PENDING_REQUEST, MemberStatus.PENDING_INVITE] },
+        channel: { workspaceId }
+      }
+    }),
+    tx.channelMember.count({
+      where: {
+        userId,
+        status: MemberStatus.BANNED,
+        channel: { workspaceId }
+      }
+    }),
+    // Kiểm tra user đã từng thuộc workspace chưa (qua các terminal state ACTIVE/LEFT/BANNED)
+    tx.channelMember.count({
+      where: {
+        userId,
+        status: { in: [MemberStatus.ACTIVE, MemberStatus.LEFT, MemberStatus.BANNED] },
+        channel: { workspaceId }
+      }
+    })
+  ])
+
+  const wsMember = await tx.workspaceMember.findUnique({
+    where: { workspaceId_userId: { workspaceId, userId } }
+  })
+
+  let newStatus: MemberStatus | null
+  if (nActive > 0) {
+    newStatus = MemberStatus.ACTIVE
+  } else if (nPending > 0) {
+    newStatus = MemberStatus.PENDING_REQUEST
+  } else if (nBanned > 0) {
+    newStatus = MemberStatus.BANNED
+  } else if (nEverActive > 0) {
+    newStatus = MemberStatus.LEFT // giữ row audit
+  } else {
+    newStatus = null // xóa row
+  }
+
+  // 4. Áp dụng
+  if (newStatus === null) {
+    if (wsMember) {
+      await tx.workspaceMember.delete({
+        where: { workspaceId_userId: { workspaceId, userId } }
+      })
     }
+    return
+  }
+
+  if (!wsMember) {
+    await tx.workspaceMember.create({
+      data: {
+        workspaceId,
+        userId,
+        role: WorkspaceMemberRole.MEMBER,
+        status: newStatus,
+        joinedAt: new Date()
+      }
+    })
+    return
+  }
+
+  if (wsMember.status !== newStatus) {
+    await tx.workspaceMember.update({
+      where: { workspaceId_userId: { workspaceId, userId } },
+      data: { status: newStatus }
+    })
   }
 }
 

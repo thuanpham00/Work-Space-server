@@ -79,7 +79,7 @@ function buildChannelWhere(meId: bigint, searchTerm: string): Prisma.ChannelWher
   // trừ những channel private
   // trừ những channel DM
   const where: Prisma.ChannelWhereInput = {
-    NOT: { OR: [{ type: ChannelType.DM }, { members: { some: { userId: BigInt(meId) } } }] },
+    NOT: { OR: [{ type: ChannelType.DM }] },
     isPrivate: false
   }
   if (searchTerm) {
