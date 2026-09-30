@@ -1,6 +1,6 @@
 import { Request } from 'express'
 import { ChannelMemberRole, MemberStatus, WorkspaceMemberRole } from '~/constants/enum'
-import { WorkspaceMemberStatus } from '~/models/responses/workspace.response'
+import { WorkspaceMemberStatus } from '~/constants/enum'
 import { TokenPayload } from '~/models/responses/user.responses'
 
 export interface AuthenticatedRequest extends Request {

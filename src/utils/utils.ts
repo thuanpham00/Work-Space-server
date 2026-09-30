@@ -6,7 +6,7 @@ import { Request } from 'express'
 import { JsonWebTokenError } from 'jsonwebtoken'
 import { FriendStatus, FriendStatusRequest, MemberStatus, WorkspaceInvitePolicy } from '~/constants/enum'
 import databaseServices from '~/services/database.services'
-import { WorkspaceMemberStatus } from '~/models/responses/workspace.response'
+import { WorkspaceMemberStatus } from '~/constants/enum'
 import { randomBytes } from 'crypto'
 import { PrismaClient } from '~/generated/prisma/client'
 

@@ -1,16 +1,16 @@
 import { Router } from 'express'
-import { getWorkspaceByInviteCodeController } from '~/controllers/workspaceInvite.controller'
+import { getChannelByInviteCodeController } from '~/controllers/channelInvite.controller'
 import { accessTokenValidator } from '~/middlewares/auth.middlewares'
 import { asyncHandler, validateParams } from '~/middlewares/errorHandler.middlewares'
-import { workspaceInviteCodeParamSchema } from '~/models/schemas/workspaceInvite.shema'
+import { channelInviteCodeParamSchema } from '~/models/schemas/channelInvite.shema'
 
 const router = Router()
 
 router.get(
   '/:code',
   accessTokenValidator,
-  validateParams(workspaceInviteCodeParamSchema),
-  asyncHandler(getWorkspaceByInviteCodeController)
+  validateParams(channelInviteCodeParamSchema),
+  asyncHandler(getChannelByInviteCodeController)
 )
 
 export default router

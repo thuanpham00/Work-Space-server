@@ -1,14 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { configChannel } from '~/constants/channel'
-import { ChannelMemberRole, ChannelType, WorkspaceMemberRole } from '~/constants/enum'
+import { ChannelMemberRole, ChannelType, WorkspaceMemberRole, WorkspaceMemberStatus } from '~/constants/enum'
 import { ErrorWithStatus } from '~/constants/errors'
 import httpStatus from '~/constants/httpStatus'
 import { Channel, ChannelInviteStatus } from '~/models/responses/channel.response'
-import {
-  type Workspace as WorkspaceResponse,
-  type WorkspaceCategory,
-  WorkspaceMemberStatus
-} from '~/models/responses/workspace.response'
+import { type Workspace as WorkspaceResponse, type WorkspaceCategory } from '~/models/responses/workspace.response'
 import databaseServices from '~/services/database.services'
 import { generateUniqueInviteCode } from '~/utils/utils'
 

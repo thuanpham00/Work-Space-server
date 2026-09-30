@@ -6,7 +6,8 @@ import {
   MessageType,
   MemberStatus,
   WorkspaceMemberRole,
-  FriendStatus
+  FriendStatus,
+  WorkspaceMemberStatus
 } from '~/constants/enum'
 import { ErrorWithStatus } from '~/constants/errors'
 import httpStatus from '~/constants/httpStatus'
@@ -117,7 +118,22 @@ class ChannelService {
           createdAt: 'desc'
         },
         include: {
-          sender: true,
+          sender: {
+            select: {
+              id: true,
+              username: true,
+              avatar: true,
+              fullName: true,
+              channelNicknames: {
+                select: {
+                  nickname: true
+                },
+                where: {
+                  channelId
+                }
+              }
+            }
+          },
           attachments: true
         }
       }),
@@ -128,8 +144,21 @@ class ChannelService {
       })
     ])
 
+    const messagesWithNicknames = messages.map((message) => {
+      const sender = message.sender
+      const nickname = sender.channelNicknames[0]?.nickname
+      return {
+        ...message,
+        sender: {
+          ...sender,
+          nickname: nickname ?? null,
+          channelNicknames: undefined
+        }
+      }
+    })
+
     return {
-      messages,
+      messages: messagesWithNicknames,
       total
     }
   }
@@ -730,47 +759,48 @@ class ChannelService {
 
   async getFriendsToInviteChannel(userId: bigint, channelId: bigint, search: string, page: number, limit: number) {
     const existingMembers = await databaseServices.prisma.channelMember.findMany({
-      where: { channelId, status: 'ACTIVE' },
+      where: { channelId, status: WorkspaceMemberStatus.ACTIVE },
       select: { userId: true }
     })
     const excludedUserIds = existingMembers.map((m) => m.userId)
-
     const keyword = search.trim()
-    const userSearch = keyword
-      ? {
-          OR: [
-            { username: { contains: keyword, mode: 'insensitive' as const } },
-            { displayName: { contains: keyword, mode: 'insensitive' as const } },
-            { fullName: { contains: keyword, mode: 'insensitive' as const } }
-          ]
-        }
-      : {}
-
     const skip = (page - 1) * limit
 
     const where: any = {
-      ...userSearch,
-      OR: [
+      AND: [
         {
-          sentFriendRequests: {
-            some: {
-              addresseeId: userId,
-              status: FriendStatus.ACCEPTED
-            }
-          }
+          // tìm theo username hoặc fullName
+          OR: [
+            { username: { contains: keyword, mode: 'insensitive' as const } },
+            { fullName: { contains: keyword, mode: 'insensitive' as const } }
+          ]
         },
         {
-          receivedFriendRequests: {
-            some: {
-              requesterId: userId,
-              status: FriendStatus.ACCEPTED
+          // phải là bạn bè
+          OR: [
+            {
+              sentFriendRequests: {
+                some: {
+                  addresseeId: userId,
+                  status: FriendStatus.ACCEPTED
+                }
+              }
+            },
+            {
+              receivedFriendRequests: {
+                some: {
+                  requesterId: userId,
+                  status: FriendStatus.ACCEPTED
+                }
+              }
             }
-          }
+          ]
         }
       ]
     }
 
     if (excludedUserIds.length) {
+      // không tìm theo user đã tham gia channel
       where.id = { notIn: excludedUserIds }
     }
 

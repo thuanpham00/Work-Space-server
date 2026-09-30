@@ -73,3 +73,12 @@ export enum WorkspaceInvitePolicy {
   EVERYONE = 'EVERYONE',
   FRIENDS_ONLY = 'FRIENDS_ONLY'
 }
+
+export enum WorkspaceMemberStatus {
+  ACTIVE = 'ACTIVE',
+  PENDING_INVITE = 'PENDING_INVITE',
+  PENDING_REQUEST = 'PENDING_REQUEST',
+  REJECTED = 'REJECTED',
+  LEFT = 'LEFT',
+  CANCELLED = 'CANCELLED'
+}

@@ -1,5 +1,5 @@
 import { Channel } from '~/models/responses/channel.response'
-import { WorkspaceMemberRole } from '~/constants/enum'
+import { WorkspaceMemberRole, WorkspaceMemberStatus } from '~/constants/enum'
 
 export interface WorkspaceMemberItem {
   id: string
@@ -59,15 +59,6 @@ export interface Workspace {
   updatedAt: string
   role?: WorkspaceMemberRole
   categories?: WorkspaceCategory[]
-}
-
-export enum WorkspaceMemberStatus {
-  ACTIVE = 'ACTIVE',
-  PENDING_INVITE = 'PENDING_INVITE',
-  PENDING_REQUEST = 'PENDING_REQUEST',
-  REJECTED = 'REJECTED',
-  LEFT = 'LEFT',
-  CANCELLED = 'CANCELLED'
 }
 
 export interface WorkspaceMember {

@@ -3,7 +3,7 @@ import httpStatus from '~/constants/httpStatus'
 import { ErrorWithStatus } from '~/constants/errors'
 import databaseServices from '~/services/database.services'
 import { WorkspaceMemberRole } from '~/constants/enum'
-import { WorkspaceMemberStatus } from '~/models/responses/workspace.response'
+import { WorkspaceMemberStatus } from '~/constants/enum'
 import { TokenPayload } from '~/models/responses/user.responses'
 import { AuthenticatedRequest } from '~/models/requests/user.requests'
 
