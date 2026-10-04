@@ -131,9 +131,11 @@ export const updateUser = async (req: AuthenticatedRequest, res: Response) => {
 
   const user = await userService.updateUser(BigInt(user_id as string), body)
 
-  const response: ApiResponse<User> = {
+  const response: ApiResponse<{ user: User }> = {
     message: 'Cập nhật user thành công',
-    data: user as unknown as User
+    data: {
+      user: user as unknown as User
+    }
   }
 
   res.json(response)
@@ -186,18 +188,18 @@ export const getUserStatusController = async (req: Request, res: Response) => {
     })
   }
 
-  const user = await userService.getInfoUserStatus(BigInt(addressId as string), BigInt(requestId))
+  const { user, channel } = await userService.getInfoUserStatus(BigInt(addressId as string), BigInt(requestId))
 
-  if (!user) {
+  if (!user || !channel) {
     throw new ErrorWithStatus({
-      message: 'User không tồn tại',
+      message: 'User hoặc channel không tồn tại',
       status: httpStatus.NOTFOUND
     })
   }
 
-  const response: ApiResponse<{ user: User }> = {
+  const response: ApiResponse<{ user: User; channel: { id: string; name: string } }> = {
     message: 'Lấy thông tin user thành công',
-    data: { user: user as unknown as User }
+    data: { user: user as unknown as User, channel: channel as unknown as { id: string; name: string } }
   }
 
   res.json(response)

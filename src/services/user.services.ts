@@ -2,13 +2,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { signToken, verifyToken } from '~/utils/jwt'
 import databaseServices from './database.services'
-import { FriendStatus, FriendStatusRequest, TokenType } from '~/constants/enum'
+import { FriendStatus, FriendStatusRequest, MemberStatus, TokenType } from '~/constants/enum'
 import { envConfig } from '~/utils/config'
 import { hashPassword } from '~/utils/scripto'
 import { ErrorWithStatus } from '~/constants/errors'
 import httpStatus from '~/constants/httpStatus'
 import { UpdateUserBody } from '~/models/schemas/user.schemas'
 import workspaceServices from '~/services/workspace.services'
+import { ChannelType } from '~/models/responses/channel.response'
+import { User } from '~/models/responses/user.responses'
 
 class UserService {
   private signAccessToken({ user_id }: { user_id: string }) {
@@ -271,7 +273,7 @@ class UserService {
   }
 
   async getInfoUserStatus(idAddress: bigint, idRequester: bigint) {
-    const [user, friendship] = await Promise.all([
+    const [user, friendship, channelInfo] = await Promise.all([
       databaseServices.prisma.user.findUnique({
         where: { id: idAddress },
         select: {
@@ -286,6 +288,7 @@ class UserService {
           gender: true,
           phone: true,
           dateOfBirth: true,
+          updatedAt: true,
           setting: true
         }
       }),
@@ -300,10 +303,38 @@ class UserService {
           status: true,
           requesterId: true
         }
+      }),
+      databaseServices.prisma.channel.findFirst({
+        where: {
+          AND: [
+            {
+              members: {
+                some: {
+                  userId: idRequester,
+                  status: MemberStatus.ACTIVE
+                }
+              }
+            },
+            {
+              members: {
+                some: {
+                  userId: idAddress,
+                  status: MemberStatus.ACTIVE
+                }
+              }
+            }
+          ],
+          type: ChannelType.DM
+        }
       })
     ])
 
-    if (!user) return null
+    if (!user) {
+      throw new ErrorWithStatus({
+        message: 'User không tồn tại',
+        status: httpStatus.NOTFOUND
+      })
+    }
 
     let friendStatus: FriendStatusRequest | null = null
 
@@ -327,9 +358,16 @@ class UserService {
     if (!showGender) response.gender = null
 
     return {
-      ...response,
-      id: user.id.toString(),
-      friendStatus
+      user: {
+        ...response,
+        id: user.id.toString(),
+        fullname: user.fullName,
+        friendStatus
+      },
+      channel: {
+        id: channelInfo?.id.toString(),
+        name: channelInfo?.name
+      }
     }
   }
 

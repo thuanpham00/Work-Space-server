@@ -251,6 +251,7 @@ class ChannelService {
       channel: {
         id: channel?.id.toString(),
         workspaceId: channel?.workspaceId ? channel.workspaceId.toString() : null,
+        workspaceName: channel?.workspace?.name,
         categoryId: channel?.categoryId ? channel.categoryId.toString() : null,
         name: channel?.name,
         description: channel?.description,
