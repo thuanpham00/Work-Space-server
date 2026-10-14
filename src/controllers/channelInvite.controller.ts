@@ -2,12 +2,13 @@ import { Response } from 'express'
 import { ErrorWithStatus } from '~/constants/errors'
 import httpStatus from '~/constants/httpStatus'
 import { AuthenticatedRequest } from '~/models/requests/user.requests'
-import { ChannelByInviteCodeResponse } from '~/models/responses/channelInvite.response'
-import { ApiResponse } from '~/models/responses/user.responses'
+import { TokenPayload } from '~/models/responses/user.responses'
+import channelServices from '~/services/channel.services'
 import channelInviteServices from '~/services/channelInvite.services'
 
 export const getChannelByInviteCodeController = async (req: AuthenticatedRequest, res: Response) => {
   const { code } = req.params
+  const { user_id: userId } = req.decode_authorization as TokenPayload
 
   if (!code) {
     throw new ErrorWithStatus({
@@ -16,12 +17,14 @@ export const getChannelByInviteCodeController = async (req: AuthenticatedRequest
     })
   }
 
-  const data = await channelInviteServices.getChannelByInviteCode(code as string)
+  const { channelId } = await channelInviteServices.getChannelByInviteCode(code as string)
 
-  const response: ApiResponse<ChannelByInviteCodeResponse> = {
-    message: 'Lấy thông tin channel từ invite code thành công',
-    data: data as ChannelByInviteCodeResponse
-  }
+  const { channel } = await channelServices.getChannelStatus(BigInt(channelId), BigInt(userId))
 
-  res.json(response)
+  res.json({
+    message: 'Lấy trạng thái channel thành công',
+    data: {
+      channel
+    }
+  })
 }

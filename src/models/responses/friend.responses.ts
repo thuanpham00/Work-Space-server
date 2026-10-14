@@ -56,4 +56,5 @@ export interface FriendToInviteChannel {
   displayName: string
   avatar: string
   fullName: string
+  status: string | null
 }

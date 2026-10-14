@@ -2,8 +2,7 @@ import { NextFunction, Response } from 'express'
 import httpStatus from '~/constants/httpStatus'
 import { ErrorWithStatus } from '~/constants/errors'
 import databaseServices from '~/services/database.services'
-import { WorkspaceMemberRole } from '~/constants/enum'
-import { WorkspaceMemberStatus } from '~/constants/enum'
+import { MemberStatus, WorkspaceMemberRole } from '~/constants/enum'
 import { TokenPayload } from '~/models/responses/user.responses'
 import { AuthenticatedRequest } from '~/models/requests/user.requests'
 
@@ -36,7 +35,7 @@ export const workspaceAdminValidator = (
       })
     }
 
-    if (member.status !== WorkspaceMemberStatus.ACTIVE) {
+    if (member.status !== MemberStatus.ACTIVE) {
       throw new ErrorWithStatus({
         message: 'Bạn không đủ quyền cho thao tác này',
         status: httpStatus.FORBIDDEN
@@ -52,7 +51,7 @@ export const workspaceAdminValidator = (
 
     req.workspaceMember = {
       role: member.role as WorkspaceMemberRole,
-      status: member.status as WorkspaceMemberStatus
+      status: member.status as MemberStatus
     }
     next()
   }
@@ -69,15 +68,34 @@ export const checkActiveMembershipValidator = async (req: AuthenticatedRequest, 
     })
   }
 
+  if (!/^\d+$/.test(workspaceIdRaw)) {
+    throw new ErrorWithStatus({
+      message: 'Không tìm thấy workspace',
+      status: httpStatus.NOTFOUND
+    })
+  }
+
   const userId = BigInt(user_id)
   const workspaceId = BigInt(workspaceIdRaw)
+
+  const findWorkspace = await databaseServices.prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { id: true }
+  })
+
+  if (!findWorkspace) {
+    throw new ErrorWithStatus({
+      message: 'Không tìm thấy workspace',
+      status: httpStatus.NOTFOUND
+    })
+  }
 
   const member = await databaseServices.prisma.workspaceMember.findUnique({
     where: { workspaceId_userId: { workspaceId, userId } },
     select: { status: true }
   })
 
-  if (!member || member.status !== WorkspaceMemberStatus.ACTIVE) {
+  if (!member || member.status !== MemberStatus.ACTIVE) {
     throw new ErrorWithStatus({
       message: 'Bạn không có quyền truy cập workspace này',
       status: httpStatus.FORBIDDEN

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { configChannel } from '~/constants/channel'
-import { ChannelMemberRole, ChannelType, WorkspaceMemberRole, WorkspaceMemberStatus } from '~/constants/enum'
+import { ChannelMemberRole, ChannelType, MemberStatus, WorkspaceMemberRole } from '~/constants/enum'
 import { ErrorWithStatus } from '~/constants/errors'
 import httpStatus from '~/constants/httpStatus'
 import { Channel, ChannelInviteStatus } from '~/models/responses/channel.response'
@@ -141,7 +141,7 @@ class Workspace {
   async getWorkspacesOfUser(userId: bigint): Promise<WorkspaceResponse[]> {
     const workspaces = await databaseServices.prisma.workspace.findMany({
       where: {
-        OR: [{ ownerId: userId }, { members: { some: { userId, status: WorkspaceMemberStatus.ACTIVE } } }]
+        OR: [{ ownerId: userId }, { members: { some: { userId, status: MemberStatus.ACTIVE } } }]
       },
       include: {
         categories: {
@@ -229,32 +229,6 @@ class Workspace {
       updatedAt: workspace.updatedAt.toISOString(),
       role: findMember.role as WorkspaceMemberRole,
       categories
-    }
-  }
-
-  // có
-  async getWorkspaceMemberStatus(workspaceId: bigint, userId: bigint) {
-    const workspace = await databaseServices.prisma.workspace.findFirst({
-      where: {
-        id: workspaceId
-      },
-      include: {
-        owner: true
-      }
-    })
-
-    if (!workspace) return null
-
-    const statusMemberWorkspace = await databaseServices.prisma.workspaceMember.findFirst({
-      where: {
-        workspaceId,
-        userId
-      }
-    })
-
-    return {
-      ...workspace,
-      workspaceStatus: statusMemberWorkspace?.status || null
     }
   }
 }

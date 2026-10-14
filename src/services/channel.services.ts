@@ -4,10 +4,9 @@ import {
   ChannelMemberRole,
   ChannelType,
   MessageType,
-  MemberStatus,
   WorkspaceMemberRole,
   FriendStatus,
-  WorkspaceMemberStatus
+  MemberStatus
 } from '~/constants/enum'
 import { ErrorWithStatus } from '~/constants/errors'
 import httpStatus from '~/constants/httpStatus'
@@ -280,6 +279,9 @@ class ChannelService {
       },
       include: {
         members: {
+          where: {
+            status: MemberStatus.ACTIVE
+          },
           include: {
             user: {
               select: {
@@ -666,10 +668,6 @@ class ChannelService {
     })
   }
 
-  /**
-   * Thu hồi link invite channel (OWNER/ADMIN).
-   * - Set status = REVOKED, không xóa row (giữ audit trail).
-   */
   async revokeInviteLink(channelId: bigint, code: string, userId: bigint) {
     const invite = await databaseServices.prisma.channelInvite.findUnique({
       where: { code }
@@ -699,20 +697,7 @@ class ChannelService {
     })
   }
 
-  async getChannelRequests(channelId: bigint, currentUserId: string) {
-    const me = await databaseServices.prisma.channelMember.findUnique({
-      where: { channelId_userId: { channelId, userId: BigInt(currentUserId) } }
-    })
-
-    const isAdmin = me && me.status === MemberStatus.ACTIVE && me.role === ChannelMemberRole.ADMIN
-
-    if (!isAdmin) {
-      throw new ErrorWithStatus({
-        message: 'Bạn không có quyền xem danh sách lời mời / yêu cầu tham gia channel này',
-        status: httpStatus.FORBIDDEN
-      })
-    }
-
+  async getChannelRequests(channelId: bigint) {
     const requests = await databaseServices.prisma.channelMember.findMany({
       where: {
         channelId,
@@ -760,7 +745,12 @@ class ChannelService {
 
   async getFriendsToInviteChannel(userId: bigint, channelId: bigint, search: string, page: number, limit: number) {
     const existingMembers = await databaseServices.prisma.channelMember.findMany({
-      where: { channelId, status: WorkspaceMemberStatus.ACTIVE },
+      where: {
+        channelId,
+        status: {
+          in: [MemberStatus.ACTIVE, MemberStatus.BANNED]
+        }
+      },
       select: { userId: true }
     })
     const excludedUserIds = existingMembers.map((m) => m.userId)
@@ -822,13 +812,22 @@ class ChannelService {
       databaseServices.prisma.user.count({ where })
     ])
 
-    const items = users.map((u) => ({
-      id: u.id.toString(),
-      username: u.username,
-      displayName: u.displayName,
-      avatar: u.avatar,
-      fullName: u.fullName
-    }))
+    const channelMembers = await databaseServices.prisma.channelMember.findMany({
+      where: { channelId, userId: { in: users.map((u) => u.id) } },
+      select: { userId: true, status: true }
+    })
+
+    const items = users.map((u) => {
+      const status = channelMembers.find((m) => m.userId === u.id)?.status
+      return {
+        id: u.id.toString(),
+        username: u.username,
+        displayName: u.displayName,
+        avatar: u.avatar,
+        fullName: u.fullName,
+        status: status || null
+      }
+    })
 
     return {
       friends: items,
@@ -914,8 +913,7 @@ class ChannelService {
       return {
         channelId: channelMember.channelId.toString(),
         userId: channelMember.userId.toString(),
-        status: MemberStatus.PENDING_REQUEST as string,
-        createdAt: channelMember.joinedAt.toISOString()
+        status: MemberStatus.PENDING_REQUEST as string
       }
     })
   }
@@ -965,6 +963,222 @@ class ChannelService {
         channelId: channelMember.channelId.toString(),
         userId: channelMember.userId.toString(),
         status: MemberStatus.CANCELED as string
+      }
+    })
+  }
+
+  async inviteUserToChannel(channelId: bigint, userId: bigint, invitedById: bigint) {
+    const channel = await databaseServices.prisma.channel.findUnique({
+      where: { id: channelId },
+      select: { id: true, workspaceId: true }
+    })
+
+    if (!channel?.workspaceId) {
+      throw new ErrorWithStatus({
+        message: 'Channel không tồn tại hoặc không thuộc workspace nào',
+        status: httpStatus.NOTFOUND
+      })
+    }
+
+    // Kiểm tra trạng thái member hiện tại
+    const existing = await databaseServices.prisma.channelMember.findUnique({
+      where: { channelId_userId: { channelId, userId } }
+    })
+
+    if (existing) {
+      if (existing.status === MemberStatus.ACTIVE) {
+        throw new ErrorWithStatus({
+          message: 'User đã là thành viên của channel này',
+          status: httpStatus.BAD_REQUESTED
+        })
+      }
+      if (existing.status === MemberStatus.PENDING_INVITE) {
+        throw new ErrorWithStatus({
+          message: 'Đã có lời mời tham gia channel cho user này',
+          status: httpStatus.BAD_REQUESTED
+        })
+      }
+    }
+
+    return await databaseServices.prisma.$transaction(async (tx) => {
+      // Upsert channelMember với PENDING_INVITE + invitedById
+      const channelMember = await tx.channelMember.upsert({
+        where: { channelId_userId: { channelId, userId } },
+        create: {
+          channelId,
+          userId,
+          role: ChannelMemberRole.MEMBER,
+          status: MemberStatus.PENDING_INVITE,
+          invitedById,
+          joinedAt: new Date()
+        },
+        update: {
+          status: MemberStatus.PENDING_INVITE,
+          invitedById
+        }
+      })
+
+      // Đồng bộ workspaceMember
+      await syncWorkspaceMember(tx, channel.workspaceId!, userId)
+
+      return {
+        channelId: channelMember.channelId.toString(),
+        userId: channelMember.userId.toString(),
+        status: MemberStatus.PENDING_INVITE as string,
+        invitedById: channelMember.invitedById ? channelMember.invitedById.toString() : invitedById.toString(),
+        createdAt: channelMember.joinedAt.toISOString()
+      }
+    })
+  }
+
+  async revokeInvite(channelId: bigint, userId: bigint, revokedById: bigint) {
+    const channel = await databaseServices.prisma.channel.findUnique({
+      where: { id: channelId },
+      select: { id: true, workspaceId: true }
+    })
+
+    if (!channel?.workspaceId) {
+      throw new ErrorWithStatus({
+        message: 'Channel không tồn tại hoặc không thuộc workspace nào',
+        status: httpStatus.NOTFOUND
+      })
+    }
+
+    const existing = await databaseServices.prisma.channelMember.findUnique({
+      where: { channelId_userId: { channelId, userId } }
+    })
+
+    if (!existing || existing.status !== MemberStatus.PENDING_INVITE) {
+      throw new ErrorWithStatus({
+        message: 'Không có lời mời nào đang pending để thu hồi',
+        status: httpStatus.BAD_REQUESTED
+      })
+    }
+
+    return await databaseServices.prisma.$transaction(async (tx) => {
+      // Update channelMember → LEFT (terminal state)
+      const channelMember = await tx.channelMember.update({
+        where: { channelId_userId: { channelId, userId } },
+        data: { status: MemberStatus.LEFT }
+      })
+
+      // Đồng bộ workspaceMember
+      await syncWorkspaceMember(tx, channel.workspaceId!, userId)
+
+      return {
+        channelId: channelMember.channelId.toString(),
+        userId: channelMember.userId.toString(),
+        status: MemberStatus.LEFT as string,
+        revokedById: revokedById.toString()
+      }
+    })
+  }
+
+  /**
+   * Flow #4: User chấp nhận lời mời (PENDING_INVITE -> ACTIVE)
+   * - Channel phải thuộc workspace.
+   * - Phải có row channelMember với status = PENDING_INVITE của đúng user.
+   * - Update status -> ACTIVE, joinedAt = now.
+   * - Đồng bộ workspaceMember qua helper syncWorkspaceMember.
+   */
+  async acceptInvite(channelId: bigint, userId: bigint) {
+    const channel = await databaseServices.prisma.channel.findUnique({
+      where: { id: channelId },
+      select: { id: true, workspaceId: true }
+    })
+
+    if (!channel?.workspaceId) {
+      throw new ErrorWithStatus({
+        message: 'Channel không tồn tại hoặc không thuộc workspace nào',
+        status: httpStatus.NOTFOUND
+      })
+    }
+
+    const existing = await databaseServices.prisma.channelMember.findUnique({
+      where: { channelId_userId: { channelId, userId } }
+    })
+
+    if (!existing) {
+      throw new ErrorWithStatus({
+        message: 'Bạn không có lời mời nào cho channel này',
+        status: httpStatus.NOTFOUND
+      })
+    }
+
+    if (existing.status !== MemberStatus.PENDING_INVITE) {
+      throw new ErrorWithStatus({
+        message: 'Chỉ accept được lời mời đang ở trạng thái PENDING_INVITE',
+        status: httpStatus.BAD_REQUESTED
+      })
+    }
+
+    return await databaseServices.prisma.$transaction(async (tx) => {
+      // Update channelMember -> ACTIVE
+      const channelMember = await tx.channelMember.update({
+        where: { channelId_userId: { channelId, userId } },
+        data: {
+          status: MemberStatus.ACTIVE,
+          joinedAt: new Date()
+        }
+      })
+
+      // Đồng bộ workspaceMember
+      await syncWorkspaceMember(tx, channel.workspaceId!, userId)
+
+      return {
+        channelId: channelMember.channelId.toString(),
+        userId: channelMember.userId.toString(),
+        status: MemberStatus.ACTIVE as string
+      }
+    })
+  }
+
+  /**
+   * Flow #5: User từ chối lời mời (PENDING_INVITE -> LEFT, terminal)
+   * - Channel phải thuộc workspace.
+   * - Phải có row channelMember với status = PENDING_INVITE của đúng user.
+   * - Update status -> LEFT (giữ row để audit, không xóa).
+   * - Không ghi đè joinedAt (giữ timestamp cũ để truy vết).
+   * - Đồng bộ workspaceMember qua helper syncWorkspaceMember.
+   */
+  async rejectInvite(channelId: bigint, userId: bigint) {
+    const channel = await databaseServices.prisma.channel.findUnique({
+      where: { id: channelId },
+      select: { id: true, workspaceId: true }
+    })
+
+    if (!channel?.workspaceId) {
+      throw new ErrorWithStatus({
+        message: 'Channel không tồn tại hoặc không thuộc workspace nào',
+        status: httpStatus.NOTFOUND
+      })
+    }
+
+    const existing = await databaseServices.prisma.channelMember.findUnique({
+      where: { channelId_userId: { channelId, userId } }
+    })
+
+    if (!existing || existing.status !== MemberStatus.PENDING_INVITE) {
+      throw new ErrorWithStatus({
+        message: 'Không có lời mời nào để từ chối',
+        status: httpStatus.BAD_REQUESTED
+      })
+    }
+
+    return await databaseServices.prisma.$transaction(async (tx) => {
+      // Update channelMember -> LEFT (terminal state, giữ row audit)
+      const channelMember = await tx.channelMember.update({
+        where: { channelId_userId: { channelId, userId } },
+        data: { status: MemberStatus.LEFT }
+      })
+
+      // Đồng bộ workspaceMember
+      await syncWorkspaceMember(tx, channel.workspaceId!, userId)
+
+      return {
+        channelId: channelMember.channelId.toString(),
+        userId: channelMember.userId.toString(),
+        status: MemberStatus.LEFT as string
       }
     })
   }

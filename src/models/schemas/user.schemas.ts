@@ -76,6 +76,17 @@ export const channelIdSchema = z.object({
   channelId: z.string().min(1, 'ID channel của bạn không được để trống')
 })
 
+// Schema cho route revoke invite (param có cả channelId + userId)
+export const channelIdAndUserIdParamSchema = z.object({
+  channelId: z.string().min(1, 'ID channel không được để trống'),
+  userId: z.string().min(1, 'ID user không được để trống')
+})
+
+// Schema body cho route admin invite user vào channel
+export const inviteUserBodySchema = z.object({
+  userId: z.string().min(1, 'ID user được mời không được để trống')
+})
+
 // Type inference từ schema
 export type RegisterBody = z.infer<typeof registerSchema>
 export type UpdateUserBody = z.infer<typeof updateUserSchema>
@@ -84,3 +95,4 @@ export type ChangePasswordBody = z.infer<typeof changePasswordSchema>
 export type SearchUserQuery = z.infer<typeof searchUserSchema>
 export type AddFriendBody = z.infer<typeof addFriendSchema>
 export type UpdateUserSettingsBody = z.infer<typeof updateUserSettingsSchema>
+export type InviteUserBody = z.infer<typeof inviteUserBodySchema>

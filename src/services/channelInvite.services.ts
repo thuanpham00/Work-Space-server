@@ -32,11 +32,7 @@ class ChannelInvite {
     }
 
     return {
-      id: invite.channel.id.toString(),
-      name: invite.channel.name,
-      description: invite.channel.description,
-      type: invite.channel.type,
-      createdAt: invite.channel.createdAt.toISOString()
+      channelId: invite.channel.id.toString()
     }
   }
 }

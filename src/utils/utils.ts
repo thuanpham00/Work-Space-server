@@ -4,9 +4,8 @@ import { envConfig } from '~/utils/config'
 import { verifyToken } from '~/utils/jwt'
 import { Request } from 'express'
 import { JsonWebTokenError } from 'jsonwebtoken'
-import { FriendStatus, FriendStatusRequest, MemberStatus, WorkspaceInvitePolicy } from '~/constants/enum'
+import { FriendStatus, FriendStatusRequest, MemberStatus } from '~/constants/enum'
 import databaseServices from '~/services/database.services'
-import { WorkspaceMemberStatus } from '~/constants/enum'
 import { randomBytes } from 'crypto'
 import { PrismaClient } from '~/generated/prisma/client'
 
@@ -122,63 +121,6 @@ export const buildChannelMemberMap = async (
     map.set(m.channelId.toString(), m.status as MemberStatus)
   }
   return map
-}
-
-/**
- * Check xem `inviterId` có thể mời `inviteeId` vào 1 workspace hay không.
- *
- * Quy tắc (theo thứ tự ưu tiên):
- * 1. Không thể tự mời chính mình
- * 2. Nếu đã là ACTIVE member -> không mời
- * 3. Nếu đã có PENDING_INVITE -> không mời (đợi user accept/reject)
- * 4. Nếu đã có PENDING_REQUEST -> không mời (user đã gửi request rồi)
- * 5. Nếu inviteePolicy = FRIENDS_ONLY -> chỉ mời được khi là bạn (ACCEPTED)
- *    - Nếu đã là bạn -> OK
- *    - Nếu đã có REQUEST_SENT / REQUEST_RECEIVED -> OK (đang pending, coi như đủ điều kiện)
- *    - Nếu không có quan hệ friend -> từ chối (FRIENDS_ONLY_POLICY)
- * 6. EVERYONE -> luôn OK
- */
-export const checkCanInvite = (params: {
-  inviterId: bigint
-  inviteeId: bigint
-  inviteePolicy: WorkspaceInvitePolicy | null
-  friendStatus: FriendStatusRequest | null
-  existingWorkspaceStatus: WorkspaceMemberStatus | null
-}): { canInvite: boolean; reason: string } => {
-  const { inviterId, inviteeId, inviteePolicy, friendStatus, existingWorkspaceStatus } = params
-
-  // 1. Tự mời chính mình
-  if (inviterId === inviteeId) {
-    return { canInvite: false, reason: 'SELF_INVITE' }
-  }
-
-  // 2. Đã là member
-  if (existingWorkspaceStatus === WorkspaceMemberStatus.ACTIVE) {
-    return { canInvite: false, reason: 'ALREADY_MEMBER' }
-  }
-
-  // 3. Đã có lời mời đang pending
-  if (existingWorkspaceStatus === WorkspaceMemberStatus.PENDING_INVITE) {
-    return { canInvite: false, reason: 'ALREADY_PENDING_INVITE' }
-  }
-
-  // 4. Đã có request xin join đang pending
-  if (existingWorkspaceStatus === WorkspaceMemberStatus.PENDING_REQUEST) {
-    return { canInvite: false, reason: 'ALREADY_PENDING_REQUEST' }
-  }
-
-  // 5. Check policy của NGƯỜI ĐƯỢC MỜI
-  if (inviteePolicy === WorkspaceInvitePolicy.FRIENDS_ONLY) {
-    const isAccepted = friendStatus === FriendStatusRequest.ACCEPTED
-    const isPendingFriend =
-      friendStatus === FriendStatusRequest.REQUEST_SENT || friendStatus === FriendStatusRequest.REQUEST_RECEIVED
-
-    if (!isAccepted && !isPendingFriend) {
-      return { canInvite: false, reason: 'FRIENDS_ONLY_POLICY' }
-    }
-  }
-
-  return { canInvite: true, reason: 'OK' }
 }
 
 /**

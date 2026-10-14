@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import {
+  acceptInviteController,
   cancelJoinRequestController,
   createChannelController,
   createInviteLinkController,
@@ -11,7 +12,10 @@ import {
   getChannelStatusController,
   getFriendsToInviteController,
   getUnreadChannelController,
+  inviteUserToChannelController,
+  rejectInviteController,
   requestJoinChannelController,
+  revokeInviteController,
   revokeInviteLinkController,
   updateChannelController,
   updateChannelNicknameController,
@@ -21,7 +25,7 @@ import {
 import { accessTokenValidator } from '~/middlewares/auth.middlewares'
 import { asyncHandler, validate, validateParams, validateQuery } from '~/middlewares/errorHandler.middlewares'
 import { queryBase } from '~/models/schemas/query.schema'
-import { channelIdSchema } from '~/models/schemas/user.schemas'
+import { channelIdAndUserIdParamSchema, channelIdSchema, inviteUserBodySchema } from '~/models/schemas/user.schemas'
 import {
   createChannelSchema,
   updateChannelConfigSchema,
@@ -175,6 +179,45 @@ router.delete(
   validateParams(channelIdSchema),
   checkChannelExistOnly,
   asyncHandler(cancelJoinRequestController)
+)
+
+// Admin gửi lời mời vào channel (yêu cầu quyền ADMIN trong channel)
+router.post(
+  '/:channelId/invite',
+  accessTokenValidator,
+  validateParams(channelIdSchema),
+  validate(inviteUserBodySchema),
+  checkChannelExistAndUserIsMember,
+  channelAdminValidator(),
+  asyncHandler(inviteUserToChannelController)
+)
+
+// Admin thu hồi lời mời đã gửi
+router.delete(
+  '/:channelId/invites/:userId',
+  accessTokenValidator,
+  validateParams(channelIdAndUserIdParamSchema),
+  checkChannelExistAndUserIsMember,
+  channelAdminValidator(),
+  asyncHandler(revokeInviteController)
+)
+
+// User chấp nhận lời mời vào channel (PENDING_INVITE -> ACTIVE)
+router.post(
+  '/:channelId/accept-invite',
+  accessTokenValidator,
+  validateParams(channelIdSchema),
+  checkChannelExistOnly,
+  asyncHandler(acceptInviteController)
+)
+
+// User từ chối lời mời vào channel (PENDING_INVITE -> LEFT)
+router.post(
+  '/:channelId/reject-invite',
+  accessTokenValidator,
+  validateParams(channelIdSchema),
+  checkChannelExistOnly,
+  asyncHandler(rejectInviteController)
 )
 
 export default router

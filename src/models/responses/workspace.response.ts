@@ -1,5 +1,5 @@
 import { Channel } from '~/models/responses/channel.response'
-import { WorkspaceMemberRole, WorkspaceMemberStatus } from '~/constants/enum'
+import { MemberStatus, WorkspaceMemberRole } from '~/constants/enum'
 
 export interface WorkspaceMemberItem {
   id: string
@@ -65,7 +65,7 @@ export interface WorkspaceMember {
   workspaceId: string
   userId: string
   role: string
-  status: WorkspaceMemberStatus
+  status: MemberStatus
   joinedAt: string | null
   invitedAt: string | null
   acceptedAt: string | null
@@ -92,7 +92,7 @@ export interface InviteSearchUserItem {
   avatar: string | null
   friendStatus: string | null
   workspaceInvitePolicy: 'EVERYONE' | 'FRIENDS_ONLY' | null
-  existingWorkspaceStatus: WorkspaceMemberStatus | null
+  existingWorkspaceStatus: MemberStatus | null
   canInvite: boolean
   reason: InviteDenialReason
 }

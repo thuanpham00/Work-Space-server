@@ -1,6 +1,4 @@
-import { Request, Response } from 'express'
-import { ErrorWithStatus } from '~/constants/errors'
-import httpStatus from '~/constants/httpStatus'
+import { Response } from 'express'
 import { AuthenticatedRequest } from '~/models/requests/user.requests'
 import { ApiResponse, TokenPayload } from '~/models/responses/user.responses'
 import { Workspace } from '~/models/responses/workspace.response'
@@ -22,7 +20,7 @@ export const getWorkspaceUserController = async (req: AuthenticatedRequest, res:
 }
 
 export const getWorkspaceDetailController = async (req: AuthenticatedRequest, res: Response) => {
-  const { id: workspaceId } = req.params
+  const { workspaceId } = req.params
   const { user_id } = req.decode_authorization as TokenPayload
   const workspaces = await workspaceServices.getWorkSpaceDetail(BigInt(workspaceId as string), BigInt(user_id))
 
@@ -33,28 +31,6 @@ export const getWorkspaceDetailController = async (req: AuthenticatedRequest, re
     data: {
       workspace: workspaces
     }
-  }
-
-  res.json(response)
-}
-
-// lấy thông tin user và trạng thái friend của user đó với user hiện tại
-export const getWorkspaceMemberStatusController = async (req: Request, res: Response) => {
-  const { id: workspaceId } = req.params
-  const { user_id } = req.decode_authorization as TokenPayload
-
-  if (!workspaceId || !user_id) {
-    throw new ErrorWithStatus({
-      message: 'Thiếu thông tin workspaceId hoặc userId',
-      status: httpStatus.BAD_REQUESTED
-    })
-  }
-
-  const workspace = await workspaceServices.getWorkspaceMemberStatus(BigInt(workspaceId as string), BigInt(user_id))
-
-  const response: ApiResponse<{ workspace: Workspace }> = {
-    message: 'Lấy thông tin user thành công',
-    data: { workspace: workspace as unknown as Workspace }
   }
 
   res.json(response)

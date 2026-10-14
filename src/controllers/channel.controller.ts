@@ -18,6 +18,7 @@ import { io } from '~/socket/socket'
 import { Attachment } from '~/models/responses/attachment.response'
 import { InviteLinkData } from '~/models/responses/workspace.response'
 import { FriendToInviteChannel } from '~/models/responses/friend.responses'
+import { InviteUserBody } from '~/models/schemas/user.schemas'
 
 export const uploadFileMessageController = async (req: AuthenticatedRequest, res: Response) => {
   const uploadedFile = getUploadedFile(req, 'file')
@@ -286,9 +287,8 @@ export const getActiveInviteLinkController = async (req: AuthenticatedRequest, r
 
 export const getChannelRequestsController = async (req: AuthenticatedRequest, res: Response) => {
   const { channelId } = req.params
-  const { user_id } = req.decode_authorization as TokenPayload
 
-  const requests = await channelServices.getChannelRequests(BigInt(channelId as string), user_id)
+  const requests = await channelServices.getChannelRequests(BigInt(channelId as string))
 
   const inviteCount = requests.filter((r) => r.type === 'invite').length
   const joinCount = requests.filter((r) => r.type === 'join').length
@@ -344,7 +344,6 @@ export const requestJoinChannelController = async (req: AuthenticatedRequest, re
     channelId: string
     userId: string
     status: string
-    createdAt: string
   }> = {
     message: 'Gửi yêu cầu tham gia channel thành công',
     data: result
@@ -365,6 +364,82 @@ export const cancelJoinRequestController = async (req: AuthenticatedRequest, res
     status: string
   }> = {
     message: 'Hủy yêu cầu tham gia channel thành công',
+    data: result
+  }
+
+  res.json(response)
+}
+
+export const inviteUserToChannelController = async (req: AuthenticatedRequest, res: Response) => {
+  const { channelId } = req.params as { channelId: string }
+  const { user_id } = req.decode_authorization as TokenPayload
+  const { userId } = req.body as InviteUserBody
+
+  const result = await channelServices.inviteUserToChannel(BigInt(channelId), BigInt(userId), BigInt(user_id))
+
+  const response: ApiResponse<{
+    channelId: string
+    userId: string
+    status: string
+    invitedById: string
+    createdAt: string
+  }> = {
+    message: 'Mời user vào channel thành công',
+    data: result
+  }
+
+  res.status(httpStatus.CREATED).json(response)
+}
+
+export const revokeInviteController = async (req: AuthenticatedRequest, res: Response) => {
+  const { channelId, userId } = req.params as { channelId: string; userId: string }
+  const { user_id } = req.decode_authorization as TokenPayload
+
+  const result = await channelServices.revokeInvite(BigInt(channelId), BigInt(userId), BigInt(user_id))
+
+  const response: ApiResponse<{
+    channelId: string
+    userId: string
+    status: string
+    revokedById: string
+  }> = {
+    message: 'Thu hồi lời mời thành công',
+    data: result
+  }
+
+  res.json(response)
+}
+
+export const acceptInviteController = async (req: AuthenticatedRequest, res: Response) => {
+  const { channelId } = req.params as { channelId: string }
+  const { user_id } = req.decode_authorization as TokenPayload
+
+  const result = await channelServices.acceptInvite(BigInt(channelId), BigInt(user_id))
+
+  const response: ApiResponse<{
+    channelId: string
+    userId: string
+    status: string
+  }> = {
+    message: 'Chấp nhận lời mời thành công',
+    data: result
+  }
+
+  res.json(response)
+}
+
+export const rejectInviteController = async (req: AuthenticatedRequest, res: Response) => {
+  const { channelId } = req.params as { channelId: string }
+  const { user_id } = req.decode_authorization as TokenPayload
+
+  const result = await channelServices.rejectInvite(BigInt(channelId), BigInt(user_id))
+
+  const response: ApiResponse<{
+    channelId: string
+    userId: string
+    status: string
+  }> = {
+    message: 'Từ chối lời mời thành công',
     data: result
   }
 
