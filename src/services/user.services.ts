@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { signToken, verifyToken } from '~/utils/jwt'
 import databaseServices from './database.services'
-import { FriendStatus, FriendStatusRequest, MemberStatus, TokenType } from '~/constants/enum'
+import { FriendStatus, FriendStatusRequest, Gender, MemberStatus, TokenType } from '~/constants/enum'
 import { envConfig } from '~/utils/config'
 import { hashPassword } from '~/utils/scripto'
 import { ErrorWithStatus } from '~/constants/errors'
@@ -10,7 +10,6 @@ import httpStatus from '~/constants/httpStatus'
 import { UpdateUserBody } from '~/models/schemas/user.schemas'
 import workspaceServices from '~/services/workspace.services'
 import { ChannelType } from '~/models/responses/channel.response'
-import { User } from '~/models/responses/user.responses'
 
 class UserService {
   private signAccessToken({ user_id }: { user_id: string }) {
@@ -57,14 +56,26 @@ class UserService {
     return verifyToken({ token: refreshToken, privateKey: envConfig.secret_key_refresh_token })
   }
 
-  async register(payload: { email: string; password: string; username?: string }) {
+  async register(payload: {
+    email: string
+    password: string
+    username: string
+    fullName: string
+    gender: Gender
+    phone: string
+    dateOfBirth: string
+  }) {
     const newUser = await databaseServices.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
           email: payload.email,
           password: hashPassword(payload.password),
           username: payload.username,
-          displayName: payload.username
+          displayName: payload.username,
+          fullName: payload.fullName,
+          gender: payload.gender,
+          phone: payload.phone,
+          dateOfBirth: payload.dateOfBirth
         }
       })
 

@@ -445,3 +445,39 @@ export const rejectInviteController = async (req: AuthenticatedRequest, res: Res
 
   res.json(response)
 }
+
+export const approveJoinRequestController = async (req: AuthenticatedRequest, res: Response) => {
+  const { channelId, userId } = req.params as { channelId: string; userId: string }
+  const { user_id: adminId } = req.decode_authorization as TokenPayload
+
+  const result = await channelServices.approveJoinRequest(BigInt(channelId), BigInt(userId), BigInt(adminId))
+
+  const response: ApiResponse<{
+    channelId: string
+    userId: string
+    status: string
+  }> = {
+    message: 'Duyệt yêu cầu tham gia channel thành công',
+    data: result
+  }
+
+  res.json(response)
+}
+
+export const rejectJoinRequestController = async (req: AuthenticatedRequest, res: Response) => {
+  const { channelId, userId } = req.params as { channelId: string; userId: string }
+  const { user_id: adminId } = req.decode_authorization as TokenPayload
+
+  const result = await channelServices.rejectJoinRequest(BigInt(channelId), BigInt(userId), BigInt(adminId))
+
+  const response: ApiResponse<{
+    channelId: string
+    userId: string
+    status: string
+  }> = {
+    message: 'Từ chối yêu cầu tham gia channel thành công',
+    data: result
+  }
+
+  res.json(response)
+}

@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import {
   acceptInviteController,
+  approveJoinRequestController,
   cancelJoinRequestController,
   createChannelController,
   createInviteLinkController,
@@ -14,6 +15,7 @@ import {
   getUnreadChannelController,
   inviteUserToChannelController,
   rejectInviteController,
+  rejectJoinRequestController,
   requestJoinChannelController,
   revokeInviteController,
   revokeInviteLinkController,
@@ -218,6 +220,26 @@ router.post(
   validateParams(channelIdSchema),
   checkChannelExistOnly,
   asyncHandler(rejectInviteController)
+)
+
+// Admin duyệt yêu cầu join (PENDING_REQUEST -> ACTIVE)
+router.post(
+  '/:channelId/requests/:userId/approve',
+  accessTokenValidator,
+  validateParams(channelIdAndUserIdParamSchema),
+  checkChannelExistAndUserIsMember,
+  channelAdminValidator(),
+  asyncHandler(approveJoinRequestController)
+)
+
+// Admin từ chối yêu cầu join (PENDING_REQUEST -> LEFT)
+router.post(
+  '/:channelId/requests/:userId/reject',
+  accessTokenValidator,
+  validateParams(channelIdAndUserIdParamSchema),
+  checkChannelExistAndUserIsMember,
+  channelAdminValidator(),
+  asyncHandler(rejectJoinRequestController)
 )
 
 export default router

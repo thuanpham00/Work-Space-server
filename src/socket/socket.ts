@@ -13,6 +13,7 @@ import {
   Socket_Room,
   upsertChannelReadState
 } from '~/socket/utils'
+import { initRedisAdapter } from '~/socket/redis.adapter'
 
 /**
  * socket = Kết nối cá nhân của 1 user. (Nên dùng socket.join là cầm tay duy nhất user đó dắt vào phòng).
@@ -23,13 +24,15 @@ export let io: Server | null = null
 
 export { Socket_Room }
 
-export const initialSocket = (httpSocket: ServerHttp) => {
+export const initialSocket = async (httpSocket: ServerHttp) => {
   io = new Server(httpSocket, {
     cors: {
       origin: ['http://localhost:5173'], // url của frontend
       methods: ['GET', 'POST', 'PUT', 'DELETE']
     }
   })
+
+  await initRedisAdapter(io)
 
   // middleware socket cấp server
   // chạy mỗi khi client bắt đầu handshake/kết nối tới server (ngay trước khi sự kiện connection xảy ra). - chạy 1 lần cho 1 lần kết nối

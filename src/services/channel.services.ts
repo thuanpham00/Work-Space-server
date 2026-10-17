@@ -18,6 +18,7 @@ import { ChannelInviteStatus } from '~/models/responses/channel.response'
 import { generateUniqueInviteCode } from '~/utils/utils'
 import { envConfig } from '~/utils/config'
 import type { Prisma } from '~/generated/prisma/client'
+import { invalidateChannelMembers } from './redis.services'
 
 class ChannelService {
   async createChannel({ categoryId, name, description, type, isPrivate, isDefault }: CreateChannelBody) {
@@ -90,6 +91,9 @@ class ChannelService {
         }
       }
     })
+
+    // (channel mới chưa có cache, DEL key không tồn tại = vô hại)
+    await invalidateChannelMembers(channel.id)
 
     return {
       id: channel.id.toString(),
@@ -1112,25 +1116,31 @@ class ChannelService {
       })
     }
 
-    return await databaseServices.prisma.$transaction(async (tx) => {
-      // Update channelMember -> ACTIVE
-      const channelMember = await tx.channelMember.update({
-        where: { channelId_userId: { channelId, userId } },
-        data: {
-          status: MemberStatus.ACTIVE,
-          joinedAt: new Date()
+    return await databaseServices.prisma
+      .$transaction(async (tx) => {
+        // Update channelMember -> ACTIVE
+        const channelMember = await tx.channelMember.update({
+          where: { channelId_userId: { channelId, userId } },
+          data: {
+            status: MemberStatus.ACTIVE,
+            joinedAt: new Date()
+          }
+        })
+
+        // Đồng bộ workspaceMember
+        await syncWorkspaceMember(tx, channel.workspaceId!, userId)
+
+        return {
+          channelId: channelMember.channelId.toString(),
+          userId: channelMember.userId.toString(),
+          status: MemberStatus.ACTIVE as string
         }
       })
-
-      // Đồng bộ workspaceMember
-      await syncWorkspaceMember(tx, channel.workspaceId!, userId)
-
-      return {
-        channelId: channelMember.channelId.toString(),
-        userId: channelMember.userId.toString(),
-        status: MemberStatus.ACTIVE as string
-      }
-    })
+      .then(async (result) => {
+        // Sau khi transaction commit thành công → invalidate cache
+        await invalidateChannelMembers(channelId)
+        return result
+      })
   }
 
   /**
@@ -1179,6 +1189,124 @@ class ChannelService {
         channelId: channelMember.channelId.toString(),
         userId: channelMember.userId.toString(),
         status: MemberStatus.LEFT as string
+      }
+    })
+  }
+
+  /**
+   * Flow #6: Admin duyệt yêu cầu join (PENDING_REQUEST -> ACTIVE)
+   * - Channel phải thuộc workspace.
+   * - Phải có row channelMember với status = PENDING_REQUEST của đúng user.
+   * - Update status -> ACTIVE, joinedAt = now.
+   * - Đồng bộ workspaceMember qua helper syncWorkspaceMember.
+   */
+  async approveJoinRequest(channelId: bigint, userId: bigint, adminId: bigint) {
+    const channel = await databaseServices.prisma.channel.findUnique({
+      where: { id: channelId },
+      select: { id: true, workspaceId: true }
+    })
+
+    if (!channel?.workspaceId) {
+      throw new ErrorWithStatus({
+        message: 'Channel không tồn tại hoặc không thuộc workspace nào',
+        status: httpStatus.NOTFOUND
+      })
+    }
+
+    const existing = await databaseServices.prisma.channelMember.findUnique({
+      where: { channelId_userId: { channelId, userId } }
+    })
+
+    if (!existing) {
+      throw new ErrorWithStatus({
+        message: 'User này không có yêu cầu tham gia channel',
+        status: httpStatus.NOTFOUND
+      })
+    }
+
+    if (existing.status !== MemberStatus.PENDING_REQUEST) {
+      throw new ErrorWithStatus({
+        message: 'Chỉ approve được yêu cầu đang ở trạng thái PENDING_REQUEST',
+        status: httpStatus.BAD_REQUESTED
+      })
+    }
+
+    return await databaseServices.prisma
+      .$transaction(async (tx) => {
+        // Update channelMember -> ACTIVE
+        const channelMember = await tx.channelMember.update({
+          where: { channelId_userId: { channelId, userId } },
+          data: {
+            status: MemberStatus.ACTIVE,
+            joinedAt: new Date()
+          }
+        })
+
+        // Đồng bộ workspaceMember
+        await syncWorkspaceMember(tx, channel.workspaceId!, userId)
+
+        return {
+          channelId: channelMember.channelId.toString(),
+          userId: channelMember.userId.toString(),
+          status: MemberStatus.ACTIVE as string,
+          approvedById: adminId.toString()
+        }
+      })
+      .then(async (result) => {
+        // ★ Sau khi transaction commit → user đã chính thức là ACTIVE
+        // → cache cũ (không có user này) sẽ sai → phải invalidate
+        await invalidateChannelMembers(channelId)
+        return result
+      })
+  }
+
+  /**
+   * Flow #7: Admin từ chối yêu cầu join (PENDING_REQUEST -> LEFT, terminal)
+   * - Channel phải thuộc workspace.
+   * - Phải có row channelMember với status = PENDING_REQUEST của đúng user.
+   * - Update status -> LEFT (giữ row để audit, không xóa).
+   * - Không ghi đè joinedAt (giữ timestamp cũ để truy vết).
+   * - Đồng bộ workspaceMember qua helper syncWorkspaceMember.
+   */
+  async rejectJoinRequest(channelId: bigint, userId: bigint, adminId: bigint) {
+    const channel = await databaseServices.prisma.channel.findUnique({
+      where: { id: channelId },
+      select: { id: true, workspaceId: true }
+    })
+
+    if (!channel?.workspaceId) {
+      throw new ErrorWithStatus({
+        message: 'Channel không tồn tại hoặc không thuộc workspace nào',
+        status: httpStatus.NOTFOUND
+      })
+    }
+
+    const existing = await databaseServices.prisma.channelMember.findUnique({
+      where: { channelId_userId: { channelId, userId } }
+    })
+
+    if (!existing || existing.status !== MemberStatus.PENDING_REQUEST) {
+      throw new ErrorWithStatus({
+        message: 'Không có yêu cầu join nào để từ chối',
+        status: httpStatus.BAD_REQUESTED
+      })
+    }
+
+    return await databaseServices.prisma.$transaction(async (tx) => {
+      // Update channelMember -> LEFT (terminal state, giữ row audit)
+      const channelMember = await tx.channelMember.update({
+        where: { channelId_userId: { channelId, userId } },
+        data: { status: MemberStatus.LEFT }
+      })
+
+      // Đồng bộ workspaceMember
+      await syncWorkspaceMember(tx, channel.workspaceId!, userId)
+
+      return {
+        channelId: channelMember.channelId.toString(),
+        userId: channelMember.userId.toString(),
+        status: MemberStatus.LEFT as string,
+        rejectedById: adminId.toString()
       }
     })
   }

@@ -7,6 +7,7 @@ import databaseServices from '~/services/database.services'
 import userServices from '~/services/user.services'
 import { envConfig } from '~/utils/config'
 import { verifyToken } from '~/utils/jwt'
+import { getChannelMemberIds, getChannelWorkspaceId } from '~/services/redis.services'
 
 export const Socket_Room = {
   user: (userId: string) => `user:${userId}`,
@@ -56,32 +57,23 @@ export const emitUnreadChannel = async (
   }
 ) => {
   const { channelId, senderId, latestMessageId } = params
-  const channel = await databaseServices.prisma.channel.findFirst({
-    where: {
-      id: channelId
-    },
-    select: { workspaceId: true }
-  })
+  // xử lý redis ở đây
+  const workspaceId = await getChannelWorkspaceId(channelId.toString())
+  if (workspaceId === null) return
 
-  if (!channel) return
+  // xử lý redis ở đây
+  const allMembers = await getChannelMemberIds(channelId.toString())
+  const recipients = allMembers.filter((uid: number) => uid !== senderId)
 
-  const members = await databaseServices.prisma.channelMember.findMany({
-    where: {
-      channelId: channelId,
-      userId: {
-        not: senderId
-      }
-    },
-    select: { userId: true }
-  })
-
-  for (const member of members) {
-    io.to(Socket_Room.user(member.userId.toString())).emit('channel_unread', {
-      channelId,
-      workspaceId: channel.workspaceId,
-      latestMessageId
-    })
-  }
+  await Promise.all(
+    recipients.map((uid) =>
+      io.to(Socket_Room.user(uid.toString())).emit('channel_unread', {
+        channelId,
+        workspaceId,
+        latestMessageId
+      })
+    )
+  )
 }
 
 // làm mới access token bằng refresh token

@@ -13,5 +13,5 @@
     }
   },
   "files": ["src/type.d.ts"], // Các file dùng để defined global type cho dự án
-  "include": ["src/**/*"] // Đường dẫn include cho các file cần build
+  "include": ["src/**/*", "test-redis.js"] // Đường dẫn include cho các file cần build
 }

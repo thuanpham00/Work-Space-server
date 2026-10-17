@@ -142,3 +142,12 @@ status ENUM('online', 'offline', 'away', 'busy') NOT NULL DEFAULT 'offline'
 | `npx prisma migrate reset` | Xóa hết, chạy lại từ đầu |
 | `npx prisma studio` | Mở giao diện quản lý database |
 | `npx prisma db push` | Đẩy schema xuống database (không tạo migration) |
+
+## 7. Redis
+- Cache Hit:
+Đã có sẵn trong cache → lấy ra luôn, 0 query DB
+"Trúng" — có sẵn, dùng luôn
+- Cache Miss:
+Chưa có trong cache → phải query DB
+"Trượt" — không có, phải đi tìm
+ 

@@ -1,10 +1,20 @@
 import { z } from 'zod'
+import { Gender } from '~/constants/enum'
 
 // Schema cho việc tạo user
 export const registerSchema = z.object({
   email: z.string().email('Email không hợp lệ'),
   password: z.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự'),
-  username: z.string().min(3, 'Username phải có ít nhất 3 ký tự')
+  username: z.string().min(3, 'Username phải có ít nhất 3 ký tự'),
+  fullName: z.string().min(1, 'Họ tên không được để trống').max(100, 'Họ tên không được quá 100 ký tự'),
+  gender: z.enum(Gender, {
+    error: 'Giới tính phải là MALE, FEMALE hoặc OTHER'
+  }),
+  phone: z.string().regex(/^[0-9+\-\s()]{6,20}$/, 'Số điện thoại không hợp lệ'),
+  dateOfBirth: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày sinh phải có định dạng YYYY-MM-DD')
+    .refine((v) => !isNaN(Date.parse(v)), 'Ngày sinh không hợp lệ')
 })
 
 // Schema cho việc cập nhật user
