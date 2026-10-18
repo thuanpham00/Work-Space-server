@@ -14,6 +14,7 @@ import {
   upsertChannelReadState
 } from '~/socket/utils'
 import { initRedisAdapter } from '~/socket/redis.adapter'
+import { setUserOffline, setUserOnline } from '~/services/presence.services'
 
 /**
  * socket = Kết nối cá nhân của 1 user. (Nên dùng socket.join là cầm tay duy nhất user đó dắt vào phòng).
@@ -75,6 +76,13 @@ export const initialSocket = async (httpSocket: ServerHttp) => {
     let activeChannelId: string | null = null
 
     addSocket(user_id, socket.id)
+
+    // đánh dấu online trong Redis
+    await setUserOnline(userId, socket.id)
+
+    socket.on('heartbeat', async () => {
+      await setUserOnline(userId, socket.id)
+    })
 
     socket.use(async (_, next) => {
       try {
@@ -139,8 +147,10 @@ export const initialSocket = async (httpSocket: ServerHttp) => {
     })
 
     // sự kiện mặc định của socket server - nếu ngắt kết nối (client ngắt, đóng tab) -> nó chạy
-    socket.on('disconnect', () => {
+    socket.on('disconnect', async () => {
       removeSocket(socket.id)
+
+      await setUserOffline(userId, socket.id)
       console.log(
         `socket ${socket.id} disconnected for user ${user_id}, remaining sockets:`,
         getSocketIds(user_id).length
