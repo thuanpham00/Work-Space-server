@@ -22,5 +22,6 @@ export const envConfig = {
   r2_bucket_name: process.env.R2_BUCKET_NAME as string,
   r2_endpoint: process.env.R2_ENDPOINT as string,
   r2_link_public: process.env.R2_LINK_PUBLIC as string,
-  frontend_url: process.env.FRONTEND_URL as string
+  frontend_url: process.env.FRONTEND_URL as string,
+  redis_url: process.env.REDIS_URL as string
 }

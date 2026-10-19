@@ -1,6 +1,7 @@
 import Redis from 'ioredis'
 import databaseServices from './database.services'
 import { MemberStatus } from '~/constants/enum'
+import { envConfig } from '~/utils/config'
 
 /**
  * 8h sáng:  50 members x 20 msg x 60 phút = 60,000 query DB trong 1 giờ
@@ -17,7 +18,7 @@ Cả ngày:  ~100 query DB
  */
 
 // ============ KẾT NỐI REDIS ============
-export const redis = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
+export const redis = new Redis(envConfig.redis_url, {
   keyPrefix: 'chat:' // mọi key tự có prefix "chat:"
 })
 

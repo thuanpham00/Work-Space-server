@@ -17,6 +17,7 @@ import searchRoutes from '~/routes/search.routes'
 import { errorHandler } from '~/middlewares/errorHandler.middlewares'
 import { initialSocket } from '~/socket/socket'
 import { cleanupIdlePresence } from '~/services/presence.services'
+import startUnreadWorker from '~/queues/unread.worker'
 config()
 
 // Sửa lỗi BigInt không thể JSON.stringify được
@@ -75,6 +76,9 @@ initialSocket(httpServer)
 httpServer.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`)
 })
+
+startUnreadWorker()
+console.log('[BullMQ] worker started')
 
 setInterval(() => {
   cleanupIdlePresence().catch((err) => console.error('[Presence cleanup]', err))
