@@ -12,8 +12,8 @@ Cả ngày:  ~500,000 query DB chỉ để lấy members
 
 8h sáng:  Lần đầu tiên miss → query DB 1 lần
           5 phút sau TTL hết → query lại 1 lần
-          → Tổng 1 giờ: ~12 query DB
-Cả ngày:  ~100 query DB
+          → Tổng 1 giờ: ~12 query DB cho 1 user
+Cả ngày:  ~100 query DB cho 1 user
 → Giảm 5,000 lần query. DB thở phào.
  */
 

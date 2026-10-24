@@ -1,5 +1,3 @@
-import httpStatus from './httpStatus'
-
 export class ErrorWithStatus {
   message: string
   status: number

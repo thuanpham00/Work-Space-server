@@ -77,13 +77,6 @@ export const initialSocket = async (httpSocket: ServerHttp) => {
 
     addSocket(user_id, socket.id)
 
-    // đánh dấu online trong Redis
-    await setUserOnline(userId, socket.id)
-
-    socket.on('heartbeat', async () => {
-      await setUserOnline(userId, socket.id)
-    })
-
     socket.use(async (_, next) => {
       try {
         const { access_token } = socket.handshake.auth
@@ -112,6 +105,13 @@ export const initialSocket = async (httpSocket: ServerHttp) => {
       if (error.message === 'Unauthorized') {
         socket.disconnect()
       }
+    })
+
+    // đánh dấu online trong Redis
+    await setUserOnline(userId, socket.id)
+
+    socket.on('heartbeat', async () => {
+      await setUserOnline(userId, socket.id)
     })
 
     socket.on('join_channel', async (channel_id) => {

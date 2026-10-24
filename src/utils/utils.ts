@@ -33,6 +33,7 @@ export const verifyAccessToken = async (access_token: string, req?: Request) => 
         status: httpStatus.UNAUTHORIZED
       })
     }
+    throw error
   }
 }
 
