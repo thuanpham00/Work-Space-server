@@ -3,11 +3,25 @@ import httpStatus from '~/constants/httpStatus'
 import { envConfig } from '~/utils/config'
 import { verifyToken } from '~/utils/jwt'
 import { Request } from 'express'
-import { JsonWebTokenError } from 'jsonwebtoken'
+import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken'
 import { FriendStatus, FriendStatusRequest, MemberStatus } from '~/constants/enum'
 import databaseServices from '~/services/database.services'
 import { randomBytes } from 'crypto'
 import { PrismaClient } from '~/generated/prisma/client'
+
+export type AccessTokenStatus = 'valid' | 'expired' | 'invalid'
+export const checkAccessToken = async (access_token: string): Promise<AccessTokenStatus> => {
+  try {
+    await verifyToken({
+      token: access_token,
+      privateKey: envConfig.secret_key_access_token
+    })
+    return 'valid'
+  } catch (error) {
+    if (error instanceof TokenExpiredError) return 'expired'
+    return 'invalid'
+  }
+}
 
 export const verifyAccessToken = async (access_token: string, req?: Request) => {
   if (!access_token) {
@@ -27,9 +41,16 @@ export const verifyAccessToken = async (access_token: string, req?: Request) => 
     }
     return decode_authorization
   } catch (error) {
-    if (error instanceof JsonWebTokenError) {
+    if (error instanceof TokenExpiredError) {
       throw new ErrorWithStatus({
         message: 'AccessToken expired',
+        status: httpStatus.UNAUTHORIZED
+      })
+    }
+
+    if (error instanceof JsonWebTokenError) {
+      throw new ErrorWithStatus({
+        message: 'AccessToken không hợp lệ',
         status: httpStatus.UNAUTHORIZED
       })
     }

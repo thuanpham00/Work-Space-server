@@ -10,7 +10,6 @@ router.post(
   accessTokenValidator,
   asyncHandler(async (req: Request, res: Response) => {
     const { refreshToken } = req.body
-    console.log('refreshToken body', refreshToken)
 
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
@@ -28,8 +27,6 @@ router.post(
   '/sync-remove-refresh-token',
   asyncHandler(async (req: Request, res: Response) => {
     const { refreshToken } = req.body
-
-    console.log('refreshToken body remove', refreshToken)
 
     await databaseServices.prisma.refreshToken.delete({
       where: {

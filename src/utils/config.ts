@@ -1,7 +1,6 @@
 import { config } from 'dotenv'
 
 const envFileName = `.env`
-console.log(envFileName)
 
 config({
   path: envFileName
@@ -25,3 +24,5 @@ export const envConfig = {
   frontend_url: process.env.FRONTEND_URL as string,
   redis_url: process.env.REDIS_URL as string
 }
+
+export const REDIS_KEY_PREFIX = 'chat:'

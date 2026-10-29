@@ -1,7 +1,7 @@
 import Redis from 'ioredis'
 import databaseServices from './database.services'
 import { MemberStatus } from '~/constants/enum'
-import { envConfig } from '~/utils/config'
+import { envConfig, REDIS_KEY_PREFIX } from '~/utils/config'
 
 /**
  * 8h sáng:  50 members x 20 msg x 60 phút = 60,000 query DB trong 1 giờ
@@ -19,7 +19,7 @@ Cả ngày:  ~100 query DB cho 1 user
 
 // ============ KẾT NỐI REDIS ============
 export const redis = new Redis(envConfig.redis_url, {
-  keyPrefix: 'chat:' // mọi key tự có prefix "chat:"
+  keyPrefix: REDIS_KEY_PREFIX // mọi key tự có prefix "chat:"
 })
 
 redis.on('connect', () => console.log('[Redis] connected'))
@@ -35,8 +35,6 @@ const WORKSPACE_TTL = 600 // 10 phút - workspace ít thay đổi
  * 1. Thử cache (Redis) trước
  * 2. Cache miss → query DB → lưu cache → trả về
  *
- * @returns Array userId. Trả [] nếu channel không có members.
- * 
  *  Key:    chat:channel:10:members
     Type:   Set
     Members: ["15", "20", "30"]   (chuỗi, vì Redis không có number)
@@ -47,11 +45,8 @@ export const getChannelMemberIds = async (channelId: string): Promise<number[]> 
   // 1. Thử cache
   const cached = await redis.smembers(key)
   if (cached.length > 0) {
-    console.log(`[Cache HIT] ${key} → ${cached.length} members (0 query DB)`)
     return cached.map(Number) // Convert string[] → number[]
   }
-
-  console.log(`[Cache MISS] ${key} → query DB...`)
 
   // 2. Cache miss → query DB
   const members = await databaseServices.prisma.channelMember.findMany({
@@ -70,9 +65,6 @@ export const getChannelMemberIds = async (channelId: string): Promise<number[]> 
   if (userIds.length > 0) {
     await redis.sadd(key, ...userIds.map(String)) // Convert number → string
     await redis.expire(key, MEMBER_TTL) // Set TTL
-    console.log(`[Cache SET] ${key} → ${userIds.length} members (TTL ${MEMBER_TTL}s)`)
-  } else {
-    console.log(`[Cache SKIP] ${key} → 0 members, không cache`)
   }
 
   return userIds.map((id) => Number(id))
@@ -84,12 +76,14 @@ export const getChannelMemberIds = async (channelId: string): Promise<number[]> 
     Type:   String
     Value:  "5"   (chuỗi, Redis không có number riêng)
  */
+const NO_WORKSPACE = '__none__'
 export const getChannelWorkspaceId = async (channelId: string): Promise<number | null> => {
   const key = `channel:${channelId}:workspace`
 
   // 1. Thử cache trước
   const cached = await redis.get(key)
   if (cached !== null) {
+    if (cached === NO_WORKSPACE) return null
     return Number(cached) // Convert string → number
   }
 
@@ -102,9 +96,13 @@ export const getChannelWorkspaceId = async (channelId: string): Promise<number |
   })
   if (!channel) return null
 
-  // 3. Ghi cache với TTL (set + expire trong 1 lệnh atomic)
+  if (channel.workspaceId === null) {
+    await redis.set(key, NO_WORKSPACE, 'EX', WORKSPACE_TTL)
+    return null
+  }
 
-  await redis.set(key, channel.workspaceId?.toString() ?? '0', 'EX', WORKSPACE_TTL)
+  // 3. Ghi cache với TTL (set + expire trong 1 lệnh atomic)
+  await redis.set(key, channel.workspaceId.toString(), 'EX', WORKSPACE_TTL)
 
   return Number(channel.workspaceId)
 }
@@ -114,10 +112,7 @@ export const getChannelWorkspaceId = async (channelId: string): Promise<number |
  * Gọi sau khi add/remove member.
  */
 export const invalidateChannelMembers = async (channelId: bigint | string | number): Promise<void> => {
-  const deleted = await redis.del(`channel:${String(channelId)}:members`)
-  if (deleted > 0) {
-    console.log(`[Cache INVALIDATE] channel:${channelId}:members → xoá ${deleted} key`)
-  }
+  await redis.del(`channel:${String(channelId)}:members`)
 }
 
 /**

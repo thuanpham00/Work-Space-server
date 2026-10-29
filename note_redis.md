@@ -1,7 +1,7 @@
 # Note — Redis Commands đang sử dụng trong dự án
 
-> Cập nhật: Phase 5 (Presence với Sorted Set)
-> Tổng cộng: **9 lệnh** + **1 stream**
+> Cập nhật: Phase 7 (List — Aggregator buffer)
+> Tổng cộng: **14 lệnh** + **1 stream**
 
 ---
 
@@ -19,6 +19,10 @@
 | 8   | `ZREM`             | Sorted Set   | `presence.services.ts:29`                         | Xóa socket khi disconnect                 |
 | 9   | `ZCARD`            | Sorted Set   | `presence.services.ts:32, 42, 70`                 | Đếm số socket đang active                 |
 | 10  | `ZREMRANGEBYSCORE` | Sorted Set   | `presence.services.ts:66`                         | Worker xóa socket idle                    |
+| 11  | `LPUSH`            | List         | `queues/unread.aggregator.ts`                     | Đẩy event vào buffer (O(1), đầu list)     |
+| 12  | `LRANGE`           | List         | `queues/unread.aggregator.ts`                     | Lấy toàn bộ events trong buffer            |
+| 13  | `LTRIM`            | List         | `queues/unread.aggregator.ts`                     | Giới hạn độ dài buffer (chống tràn)        |
+| 14  | `LLEN`             | List         | `queues/unread.aggregator.ts`                     | Đếm số event trong buffer                  |
 | -   | `SCAN` (stream)    | Generic      | `presence.services.ts:53`                         | Duyệt tất cả key `presence:user:*`        |
 
 ---
@@ -83,7 +87,97 @@ Score:   Date.now() (millisecond) — timestamp lần cuối heartbeat
 
 ---
 
-### 4️⃣ Key-level (áp dụng cho mọi kiểu)
+### 4️⃣ List (hàng đợi có thứ tự — FIFO)
+
+List trong Redis = mảng các chuỗi, **có thứ tự**, cho phép thêm/xóa ở **2 đầu**.
+
+| Lệnh      | Cú pháp                                    | Ví dụ                                                    |
+| --------- | ------------------------------------------ | -------------------------------------------------------- |
+| `LPUSH`   | `LPUSH key element [element ...]`          | `LPUSH chat:unread:buffer '{"messageId":1001}'`         |
+| `RPUSH`   | `RPUSH key element [element ...]`          | `RPUSH chat:queue job1`                                 |
+| `LPOP`    | `LPOP key`                                | `LPOP chat:unread:buffer` → `"{\"messageId\":1001}"`      |
+| `RPOP`    | `RPOP key`                                | `RPOP bull:unread-batch:wait`                           |
+| `LRANGE`  | `LRANGE key start stop`                   | `LRANGE chat:unread:buffer 0 -1` → toàn bộ elements    |
+| `LLEN`    | `LLEN key`                                | `LLEN chat:unread:buffer` → `1000`                      |
+| `LTRIM`   | `LTRIM key start stop`                    | `LTRIM chat:unread:buffer 0 9999`                       |
+| `BLPOP`   | `BLPOP key [key ...] timeout`             | `BLPOP queue 5` → chặn tới khi có item                  |
+
+**Cấu trúc key (buffer của Aggregator):**
+
+```
+Key:    chat:unread:buffer
+Type:   List
+Value:  [ '{"channelId":10,"messageId":1001}', '{"channelId":10,"messageId":1002}' ]
+```
+
+#### Đặc điểm & đánh đổi
+
+| Đặc điểm | Chi tiết |
+| --------- | -------- |
+| **Thứ tự** | Có (FIFO) — phần tử push trước nằm trước |
+| **Truy cập theo index** | **KHÔNG** — không có `list[0]`, phải `LRANGE key 0 0` (O(N)) |
+| **Đẩy vào đầu/tail** | `LPUSH`/`RPUSH` đều **O(1)** |
+| **Xóa đầu/tail** | `LPOP`/`RPOP` đều **O(1)** |
+| **Lấy phần tử giữa** | `LRANGE` là **O(N + S)** — tốn khi list dài |
+| **Trùng lặp** | Cho phép (khác Set — Set là tập hợp không trùng) |
+| **Blocking** | `BLPOP`/`BRPOP` — connection bị block tới khi có item |
+
+> ⚠️ **Đừng dùng List làm "mảng có index"** — đó là job của Sorted Set hoặc Hash. List chỉ nên dùng cho **queue / buffer / stack**, tức là thao tác ở 2 đầu.
+
+#### Tại sao List làm buffer cho Aggregator (Phase 7)?
+
+```
+Mỗi message  → LPUSH vào List            (O(1), ~0.5ms)   ← Producer nhẹ
+Mỗi 1 giây  → LRANGE 0 -1 lấy hết       (O(N))          ← Flush
+              → DEL buffer
+              → queue.add() gom thành 1 job
+```
+
+**Vì sao không `queue.add()` ngay mỗi message?**
+
+```
+1000 message / giây = 1000 job / giây
+→ 1000 lần LPUSH + 1000 lần worker pickup
+→ Worker overhead ~5ms × 1000 = 5 giây CHỈ ĐỂ PICKUP
+```
+
+**Buffer pattern** gom 1000 message → **1 job** → worker xử lý 1 lần.
+
+#### `LPUSH` vs `RPUSH` — chọn chiều nào?
+
+| Lệnh    | Thêm vào đâu | Khi xử lý bằng `LPOP` | FIFO? |
+| ------- | ------------ | ---------------------- | ----- |
+| `LPUSH` | **đầu** list | Lấy từ đầu → đúng thứ tự push | ✅ FIFO |
+| `RPUSH` | **cuối** list | Lấy từ đầu → ngược thứ tự push  | ❌ LIFO |
+
+Buffer dùng `LPUSH` + `LRANGE`/`DEL` nên không vấn đề. Còn BullMQ dùng `LPUSH` (đẩy job mới vào đầu) + `BRPOP` (lấy từ cuối) → **job cũ được xử lý trước** = FIFO thật sự.
+
+#### `LTRIM` chống tràn
+
+```typescript
+await connection.lpush(BUFFER_KEY, JSON.stringify(event))
+await connection.ltrim(BUFFER_KEY, 0, BUFFER_MAX_SIZE - 1)  // giữ 10000 phần tử đầu
+```
+
+- `LTRIM key start stop` — giữ lại các phần tử từ index `start` đến `stop`, **xoá phần còn lại**.
+- `LTRIM buffer 0 9999` → giữ 10000 phần tử đầu.
+- Phòng worker chết → không ai flush → buffer phình vô hạn → Redis đầy.
+
+#### Blocking pop — vì sao quan trọng với Worker?
+
+```redis
+BRPOP bull:unread-batch:wait 5
+```
+
+- Worker **không poll liên tục** (tốn RTT vô ích).
+- Connection bị **block** tới khi có job → Redis "đánh thức" worker.
+- Timeout (giây) → trả `nil` nếu hết thời gian, worker ngủ tiếp.
+
+> 📌 BullMQ dùng chính cơ chế này (`BRPOPLPUSH` để move job sang list `active`). Vì vậy **Worker cần connection riêng** — connection đang block không được dùng cho lệnh thường.
+
+---
+
+### 5️⃣ Key-level (áp dụng cho mọi kiểu)
 
 | Lệnh     | Cú pháp                                     | Ví dụ                               |
 | -------- | ------------------------------------------- | ----------------------------------- |
@@ -105,8 +199,22 @@ Score:   Date.now() (millisecond) — timestamp lần cuối heartbeat
 | String           | Cache 1 giá trị đơn (VD: workspaceId)                       |
 | Set              | Cache danh sách không trùng (VD: members)                   |
 | Sorted Set       | Cache danh sách có thứ tự / cần score để TTL (VD: presence) |
+| List             | Queue / buffer FIFO — thêm xóa ở 2 đầu (VD: unread buffer) |
 | EXPIRE           | Cleanup key sau X giây không hoạt động                      |
 | ZREMRANGEBYSCORE | Cleanup member cũ trong sorted set                          |
+| LTRIM            | Giới hạn độ dài List buffer (chống tràn)                   |
+
+### Chọn kiểu dữ liệu nhanh
+
+| Cần gì?                            | Dùng       | Lệnh then chốt        |
+| ---------------------------------- | ---------- | --------------------- |
+| 1 giá trị đơn                      | String     | `GET` / `SET EX`      |
+| Tập hợp không trùng                | Set        | `SADD` / `SMEMBERS`   |
+| Cần thứ tự theo score / timestamp  | Sorted Set | `ZADD` / `ZRANGE`     |
+| FIFO, thêm-xóa ở 2 đầu, buffer    | List       | `LPUSH` / `BRPOP`    |
+| Lấy field cụ thể trong 1 object   | Hash       | `HSET` / `HGETALL`    |
+| Broadcast 1-n, không cần lưu      | Pub/Sub    | `PUBLISH` / `SUBSCRIBE` |
+| Event stream có replay             | Stream     | `XADD` / `XREAD`      |
 
 ---
 
@@ -135,6 +243,30 @@ Mỗi key trong Redis có **3 thuộc tính**:
 
 **Redis = map\<Key, {Type, Value, TTL?}\>**
 
+### Shape của từng kiểu
+
+```
+┌─ String ─────────────────────────┐
+│  chat:channel:10:workspace       │
+│  Value: "5"                      │
+└───────────────────────────────────┘
+
+┌─ Set ────────────────────────────┐
+│  chat:channel:10:members         │
+│  Value: ["15", "20", "30"]        │
+└───────────────────────────────────┘
+
+┌─ Sorted Set ─────────────────────┐
+│  chat:presence:user:15           │
+│  Value: { socket_abc: 17000... } │  ← member + score
+└───────────────────────────────────┘
+
+┌─ List ───────────────────────────┐
+│  chat:unread:buffer              │
+│  Value: [ "{...}", "{...}" ]      │  ← có thứ tự, trùng lặp OK
+└───────────────────────────────────┘
+```
+
 ---
 
 ## 🔄 2 kiểu comment thường gặp trong code Redis
@@ -155,6 +287,8 @@ Hai kiểu này **khác nhau**, không thay thế nhau.
 | Phase 1-3 (Cache)  | `GET`, `SET EX`, `DEL`, `SADD`, `SMEMBERS`, `EXPIRE`         |
 | Phase 4 (Adapter)  | (không dùng lệnh trực tiếp — qua `@socket.io/redis-adapter`) |
 | Phase 5 (Presence) | `ZADD`, `ZREM`, `ZCARD`, `ZREMRANGEBYSCORE`, `SCAN`          |
+| Phase 6 (BullMQ)   | (BullMQ tự quản lý — `LPUSH`/`BRPOP`/`BRPOPLPUSH`)          |
+| Phase 7 (List)     | `LPUSH`, `LRANGE`, `LTRIM`, `LLEN`                           |
 
 ---
 
@@ -295,10 +429,53 @@ bull:unread-batch:completed ← Sorted Set job xong
 bull:unread-batch:failed    ← Sorted Set job fail
 ```
 
+> 📌 **BullMQ dùng List làm queue thật**: `LPUSH` job mới vào đầu list `:wait`, worker `BRPOP` lấy từ cuối → job **cũ được xử lý trước** (FIFO). Đây cũng là lý do Worker cần connection riêng: `BRPOP` **block** connection, nếu dùng chung thì các lệnh thường sẽ bị treo.
+
 ### Producer — Consumer
 
 - **Producer:** `queue.add(name, data)` — đẩy job vào
 - **Consumer (Worker):** chạy liên tục, pickup job ra xử lý
+
+**Producer** = bên tạo & đẩy job vào queue, **không tự xử lý** (fire-and-forget), không đợi kết quả.
+**Consumer** = worker chạy nền, tự lấy job ra xử lý, retry khi fail.
+
+> ⚠️ Delivery = **at-least-once** → job có thể chạy 2 lần → consumer phải **idempotent**.
+
+### Chi phí RTT (Round-Trip Time)
+
+**RTT** = thời gian gói tin đi từ client → server **và quay lại**. Mỗi lệnh Redis tuần tự = **1 RTT**.
+
+```
+Client --LPUSH key v----> Server
+Client <---- "OK" ------ Server     ← tổng = 1 RTT
+```
+
+**Chi phí RTT** = *số round-trip × thời gian mỗi RTT*. Đây là độ trễ do **mạng**, tách biệt với độ trễ do **xử lý**.
+
+| Khoảng cách | RTT điển hình |
+| ------------ | ------------- |
+| Cùng máy / LAN | ~0.1 – 1 ms |
+| Cloud + client cùng khu vực | ~10 – 30 ms |
+| Cloud + client xa (EU/US) | ~150 – 250 ms |
+
+**Giảm chi phí RTT:**
+
+1. **Pipeline / `MGET`** — gộp N lệnh thành 1 RTT.
+2. **Lua script** — gộp logic vào 1 round-trip, atomic trên server.
+3. **Cache Redis** — né round-trip tới Postgres (giống `redis.services.ts` TTL 300s/600s).
+4. **Batch/Aggregator** — 1000 `LPUSH` (1000 RTT) → gom thành **1 job** (~1 RTT + 1 RTT `queue.add`).
+
+```typescript
+// 2 lệnh tuần tự = 2 RTT
+const ws = await redis.get(`channel:${id}:workspace`)
+const members = await redis.smembers(`channel:${id}:members`)
+
+// Pipeline = 1 RTT
+const pipeline = redis.pipeline()
+pipeline.get(`channel:${id}:workspace`)
+pipeline.smembers(`channel:${id}:members`)
+const [[, ws], [, members]] = await pipeline.exec()
+```
 
 ### Competing consumers (scale)
 
@@ -391,3 +568,108 @@ Cung cấp API để tạo queue, thêm job, chạy worker, retry khi lỗi, gi�
 
 Worker – Bộ phận thực thi công việc
 Liên tục nhận các job từ queue và chạy hàm xử lý tương ứng ở phía backend.
+
+---
+
+## 📦 Phase 7 — List làm buffer (Aggregator)
+
+### Vấn đề: 1 message → 1 job là quá nhiều
+
+```
+1000 message / giây = 1000 job / giây
+→ 1000 lần LPUSH (Producer)
+→ 1000 lần worker pickup
+→ Worker overhead ~5ms × 1000 = 5 giây CHỈ ĐỂ PICKUP
+```
+
+### Giải pháp: Buffer pattern (gom trước, xử lý sau)
+
+```
+Mỗi message  → LPUSH vào List Redis           (O(1), ~0.5ms)   ← Producer nhẹ
+Mỗi 1 giây  → LRANGE 0 -1 lấy hết             (O(N))          ← Flush
+              → DEL buffer
+              → unreadQueue.add() gom thành 1 job
+              → Worker xử lý 1 job chứa N events              ← Consumer
+```
+
+**1000 msg/s → 1 job/s (chứa ~1000 events)**
+
+### Code mẫu
+
+```typescript
+const BUFFER_KEY = 'unread:buffer'
+const BUFFER_MAX_SIZE = 10000
+const FLUSH_INTERVAL = 1000
+
+// ============ PRODUCER ============
+export const enqueueUnread = async (event: UnreadEvent): Promise<void> => {
+  await connection.lpush(BUFFER_KEY, JSON.stringify(event))
+  await connection.ltrim(BUFFER_KEY, 0, BUFFER_MAX_SIZE - 1)
+}
+
+// ============ CONSUMER (FLUSH SCHEDULER) ============
+export const startUnreadAggregator = () => {
+  setInterval(async () => {
+    // 1. Lấy toàn bộ events
+    const events = await connection.lrange(BUFFER_KEY, 0, -1)
+    if (events.length === 0) return
+
+    // 2. Xoá buffer TRƯỚC khi xử lý
+    await connection.del(BUFFER_KEY)
+
+    // 3. Parse + lọc lỗi
+    const parsed = events
+      .map((e) => {
+        try {
+          return JSON.parse(e) as UnreadEvent
+        } catch {
+          return null
+        }
+      })
+      .filter((e): e is UnreadEvent => e !== null)
+    if (parsed.length === 0) return
+
+    // 4. Gom thành 1 job
+    await unreadQueue.add('batch', { events: parsed })
+  }, FLUSH_INTERVAL)
+}
+```
+
+### ⚠️ Thứ tự bắt buộc: `LRANGE` → `DEL` → `queue.add`
+
+| Sai | Hậu quả |
+| --- | ------- |
+| `DEL` trước `LRANGE` | **Mất data** — xoá trước khi lấy |
+| `queue.add` trước `DEL` | Event mới push vào bị `DEL` xoá mất |
+
+Vì `DEL` chạy trước khi xử lý → event mới push sau đó rơi vào buffer rỗng → interval kế tiếp lấy được. Nhưng **nếu server crash giữa `LRANGE` và `queue.add`** → mất event → buffer chỉ là tạm, **không được làm source of truth**.
+
+### Vì sao chọn List mà không chọn Set / Sorted Set?
+
+| Kiểu    | Có thứ tự? | Trùng lặp? | Đánh giá                                    |
+| ------- | ----------- | ---------- | ------------------------------------------- |
+| **List** | ✅ FIFO      | ✅ OK       | **Đúng** — buffer là hàng đợi, cần thứ tự  |
+| Set     | ❌           | ❌          | Mất thứ tự, mất event trùng                  |
+| Sorted Set | ✅ (score)  | ❌          | Overkill — cần score, không cần query range |
+
+### Lệnh List thường dùng trong dự án
+
+| Lệnh      | Dùng ở đâu                        | Ghi chú |
+| --------- | --------------------------------- | ------- |
+| `LPUSH`   | `enqueueUnread()` — đẩy event     | O(1), thêm vào đầu |
+| `LRANGE`  | Aggregator — lấy toàn bộ          | `0 -1` = tất cả, O(N) |
+| `LTRIM`   | `enqueueUnread()` — giới hạn size | Chống buffer phình vô hạn |
+| `LLEN`    | Kiểm tra số event trước flush     | Tránh tạo job rỗng |
+| `DEL`     | Xoá buffer sau khi lấy            | Xoá key cả list |
+| `BRPOP`   | BullMQ Worker — lấy job (internal) | Block, không poll |
+
+### So sánh List vs BullMQ (khi nào dùng gì)
+
+| Tiêu chí            | List buffer (Aggregator) | BullMQ queue trực tiếp |
+| ------------------- | ------------------------ | ---------------------- |
+| Ghi vào             | `LPUSH` — 1 RTT, rất rẻ | `queue.add()` — nặng hơn (Lua script, nhiều key) |
+| Số job/giây         | 1 job / giây             | 1 job / message (1000/s) |
+| Retry khi fail      | ❌ không có               | ✅ exponential backoff   |
+| Stalled detection   | ❌                        | ✅ heartbeat 30s        |
+| Độ trễ              | +1 giây (chờ flush)      | ~5–50ms                |
+| Phù hợp khi         | Cần batch, không cần retry ngay | Cần retry + độ trễ thấp |

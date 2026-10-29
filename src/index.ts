@@ -16,8 +16,11 @@ import socketRoutes from '~/routes/socket.routes'
 import searchRoutes from '~/routes/search.routes'
 import { errorHandler } from '~/middlewares/errorHandler.middlewares'
 import { initialSocket } from '~/socket/socket'
+import { closeRedisAdapter } from '~/socket/redis.adapter'
 import { cleanupIdlePresence } from '~/services/presence.services'
-import startUnreadWorker from '~/queues/unread.worker'
+import { startUnreadWorker } from '~/queues/unread.worker'
+import { startUnreadAggregator } from '~/queues/unread.aggregator'
+import { envConfig } from '~/utils/config'
 config()
 
 // Sửa lỗi BigInt không thể JSON.stringify được
@@ -35,6 +38,7 @@ const limiter = rateLimit({
 })
 
 const app = express()
+app.set('trust proxy', 1) // chạy sau nginx LB: tin X-Forwarded-For để rate-limit nhận đúng IP client
 app.use(express.json()) // biến request từ object thành json
 app.use(cookieParse()) // middleware để parse cookie từ request header
 app.use(
@@ -45,7 +49,7 @@ app.use(
   })
 ) // bảo mật cho server
 
-const allowedOrigins = ['http://localhost:5173', 'http://192.168.100.16:5173']
+const allowedOrigins = [envConfig.frontend_url]
 
 app.use(
   cors({
@@ -66,20 +70,43 @@ app.use(errorHandler)
 
 databaseServices.connect().then(async () => {
   console.log('Connected to database')
-  // await databaseServices.initAdminUser()
 })
 
 const httpServer = createServer(app) // tạo 1 server đựa trên app của Express
 
-initialSocket(httpServer)
+const start = async () => {
+  try {
+    await initialSocket(httpServer)
 
-httpServer.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`)
-})
+    httpServer.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`)
+    })
 
-startUnreadWorker()
-console.log('[BullMQ] worker started')
+    // Worker + aggregator chỉ khởi động sau khi io sẵn sàng
+    startUnreadAggregator()
+    startUnreadWorker()
+    console.log('[BullMQ] worker + aggregator started')
 
-setInterval(() => {
-  cleanupIdlePresence().catch((err) => console.error('[Presence cleanup]', err))
-}, 60_000)
+    setInterval(() => {
+      cleanupIdlePresence().catch((err) => console.error('[Presence cleanup]', err))
+    }, 60_000)
+  } catch (err) {
+    console.error('[Server] khởi động thất bại:', err)
+    process.exit(1)
+  }
+}
+
+start()
+
+const shutdown = async (signal: string) => {
+  console.log(`[Server] nhận ${signal}, đang shutdown...`)
+  try {
+    await closeRedisAdapter()
+  } catch (err) {
+    console.error('[Server] shutdown error:', err)
+  }
+  process.exit(0)
+}
+
+process.on('SIGTERM', () => void shutdown('SIGTERM'))
+process.on('SIGINT', () => void shutdown('SIGINT'))

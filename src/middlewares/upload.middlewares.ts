@@ -89,7 +89,6 @@ export const uploadMessageMiddleware = (options?: FormidableOptions) => {
  */
 export const getUploadedFile = (req: Request, fieldName: string): UploadedFile => {
   const files = (req as Request & { uploadedFiles?: UploadedFile[] }).uploadedFiles ?? []
-  console.log(files)
   const matched = files.find((f) => f.originalFilename !== null || f.size > 0)
   const file = matched ?? files[0]
 

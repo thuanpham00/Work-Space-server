@@ -1,20 +1,20 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Server } from 'socket.io'
 import { Server as ServerHttp } from 'http'
-import { verifyAccessToken } from '~/utils/utils'
+import { checkAccessToken, verifyAccessToken } from '~/utils/utils'
 import { TokenPayload } from '~/models/responses/user.responses'
 import databaseServices from '~/services/database.services'
-import { addSocket, getSocketIds, removeSocket } from '~/socket/online-users'
 import {
   handleRefreshToken,
   handleSendGif,
   handleSendMessage,
+  isMemberChannel,
   Socket_Room,
   upsertChannelReadState
 } from '~/socket/utils'
 import { initRedisAdapter } from '~/socket/redis.adapter'
 import { setUserOffline, setUserOnline } from '~/services/presence.services'
+import { setIO } from '~/socket/socket-instance'
+import { envConfig } from '~/utils/config'
 
 /**
  * socket = Kết nối cá nhân của 1 user. (Nên dùng socket.join là cầm tay duy nhất user đó dắt vào phòng).
@@ -28,11 +28,12 @@ export { Socket_Room }
 export const initialSocket = async (httpSocket: ServerHttp) => {
   io = new Server(httpSocket, {
     cors: {
-      origin: ['http://localhost:5173'], // url của frontend
+      origin: [envConfig.frontend_url], // url của frontend
       methods: ['GET', 'POST', 'PUT', 'DELETE']
     }
   })
-
+  // Adapter phải attach TRƯỚC khi đăng ký handler, để mọi emit đi qua Redis pub/sub.
+  // Nếu attach sau, các emit đầu tiên chỉ đi local → instance khác không nhận được.
   await initRedisAdapter(io)
 
   // middleware socket cấp server
@@ -75,30 +76,23 @@ export const initialSocket = async (httpSocket: ServerHttp) => {
     // Channel đang mở trên socket này (chỉ join 1 channel tại 1 thời điểm)
     let activeChannelId: string | null = null
 
-    addSocket(user_id, socket.id)
-
+    // next() trong middleware socket khác next() trong middleware http // lỗi ở đây nó bắn về socket.on('error')
     socket.use(async (_, next) => {
-      try {
-        const { access_token } = socket.handshake.auth
-        if (!access_token) return next(new Error('Unauthorized'))
-        try {
-          await verifyAccessToken(access_token)
-          next()
-        } catch (error: any) {
-          if (error.message === 'AccessToken expired') {
-            const refresh_token = socket.handshake.auth.refresh_token
+      const { access_token, refresh_token } = socket.handshake.auth
+      if (!access_token) return next(new Error('Unauthorized'))
 
-            if (refresh_token) {
-              await handleRefreshToken(refresh_token, socket, next)
-            } else {
-              next(new Error('Unauthorized'))
-            }
-          }
-          next(new Error('Unauthorized'))
-        }
-      } catch (error: any) {
-        next(new Error('Unauthorized')) // nếu lỗi nó bắt xuống sự kiện error bên dưới
+      const tokenStatus = await checkAccessToken(access_token)
+      if (tokenStatus === 'valid') {
+        return next()
       }
+
+      if (tokenStatus === 'invalid' || !refresh_token) {
+        return next(new Error('Unauthorized'))
+      }
+
+      const refreshed = await handleRefreshToken(refresh_token, socket)
+
+      return refreshed.ok ? next() : next(new Error('Unauthorized'))
     })
 
     socket.on('error', (error) => {
@@ -116,6 +110,8 @@ export const initialSocket = async (httpSocket: ServerHttp) => {
 
     socket.on('join_channel', async (channel_id) => {
       const channelId = channel_id.toString()
+      const isMember = await isMemberChannel(userId, Number(channelId))
+      if (!isMember) return
 
       if (activeChannelId && activeChannelId !== null) {
         socket.leave(Socket_Room.channel(activeChannelId))
@@ -124,11 +120,10 @@ export const initialSocket = async (httpSocket: ServerHttp) => {
       socket.join(Socket_Room.channel(channelId))
       activeChannelId = channelId
 
-      console.log(`user ${user_id} joined channel ${channelId}`)
       await upsertChannelReadState(userId, Number(channelId))
     })
 
-    socket.on('leave_channel', (channel_id) => {
+    socket.on('leave_channel', async (channel_id) => {
       const channelId = channel_id.toString()
 
       if (activeChannelId === channelId) {
@@ -139,22 +134,22 @@ export const initialSocket = async (httpSocket: ServerHttp) => {
     })
 
     socket.on('send_message', async (data) => {
+      const isMember = await isMemberChannel(userId, Number(data.channel_id))
+      if (!isMember) return
+
       await handleSendMessage(io as Server, { userId, user_id, data })
     })
 
     socket.on('send_gif', async (data) => {
+      const isMember = await isMemberChannel(userId, Number(data.channel_id))
+      if (!isMember) return
+
       await handleSendGif(io as Server, { userId, user_id, data })
     })
 
     // sự kiện mặc định của socket server - nếu ngắt kết nối (client ngắt, đóng tab) -> nó chạy
     socket.on('disconnect', async () => {
-      removeSocket(socket.id)
-
       await setUserOffline(userId, socket.id)
-      console.log(
-        `socket ${socket.id} disconnected for user ${user_id}, remaining sockets:`,
-        getSocketIds(user_id).length
-      )
     })
 
     // join room user
@@ -169,7 +164,7 @@ export const initialSocket = async (httpSocket: ServerHttp) => {
     for (const member of workspaceMembers) {
       socket.join(Socket_Room.workspace(member.workspaceId.toString()))
     }
-
-    console.log(`user ${user_id} joined rooms: user + ${workspaceMembers.length} workspace(s)`)
   })
+
+  setIO(io)
 }

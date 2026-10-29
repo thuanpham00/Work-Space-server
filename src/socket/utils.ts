@@ -1,13 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Server, Socket } from 'socket.io'
-import { MessageType } from '~/constants/enum'
+import { MemberStatus, MessageType } from '~/constants/enum'
 import { Media } from '~/models/responses/media.response'
 import databaseServices from '~/services/database.services'
 import userServices from '~/services/user.services'
 import { envConfig } from '~/utils/config'
 import { verifyToken } from '~/utils/jwt'
-import { getChannelMemberIds, getChannelWorkspaceId } from '~/services/redis.services'
+import { getChannelWorkspaceId } from '~/services/redis.services'
+import { TokenExpiredError } from 'jsonwebtoken'
+import { enqueueUnread } from '~/queues/unread.aggregator'
 
 export const Socket_Room = {
   user: (userId: string) => `user:${userId}`,
@@ -47,37 +47,9 @@ export const upsertChannelReadState = async (userId: number, channelId: number, 
   })
 }
 
-// xử lý bắn socket tới những user (trừ người gửi) thuộc channel đó nhưng không join vào channel đó
-export const emitUnreadChannel = async (
-  io: Server,
-  params: {
-    channelId: number
-    senderId: number
-    latestMessageId: number
-  }
-) => {
-  const { channelId, senderId, latestMessageId } = params
-  // xử lý redis ở đây
-  const workspaceId = await getChannelWorkspaceId(channelId.toString())
-  if (workspaceId === null) return
-
-  // xử lý redis ở đây
-  const allMembers = await getChannelMemberIds(channelId.toString())
-  const recipients = allMembers.filter((uid: number) => uid !== senderId)
-
-  await Promise.all(
-    recipients.map((uid) =>
-      io.to(Socket_Room.user(uid.toString())).emit('channel_unread', {
-        channelId,
-        workspaceId,
-        latestMessageId
-      })
-    )
-  )
-}
-
 // làm mới access token bằng refresh token
-export const handleRefreshToken = async (refresh_token: string, socket: Socket, next: (err?: any) => void) => {
+export type RefreshResult = { ok: true } | { ok: false; reason: 'expired' | 'invalid' }
+export const handleRefreshToken = async (refresh_token: string, socket: Socket): Promise<RefreshResult> => {
   try {
     const [decode_refreshToken, findToken] = await Promise.all([
       verifyToken({ token: refresh_token, privateKey: envConfig.secret_key_refresh_token }),
@@ -86,36 +58,47 @@ export const handleRefreshToken = async (refresh_token: string, socket: Socket, 
       })
     ])
 
-    if (findToken) {
-      // Tạo tokens mới
-      const { accessToken, refreshToken: newRefreshToken } = await userServices.refreshToken({
-        token: refresh_token,
-        user_id: decode_refreshToken.user_id,
-        exp: decode_refreshToken.exp
+    if (!findToken) {
+      socket.emit('auth_error', {
+        message: 'Unauthorized',
+        name: 'UnauthorizedError',
+        code: 401,
+        type: 'refresh_token_expired',
+        refreshToken: refresh_token
       })
-      // Cập nhật socket auth với token mới
-      socket.handshake.auth.access_token = accessToken
-      socket.handshake.auth.refresh_token = newRefreshToken
-
-      // Gửi tokens mới về client
-      socket.emit('token_refresh', {
-        accessToken,
-        refreshToken: newRefreshToken
-      })
-      next() // Cho phép event tiếp tục với token mới
-      return
+      return { ok: false, reason: 'invalid' }
     }
+
+    // Tạo tokens mới
+    const { accessToken, refreshToken: newRefreshToken } = await userServices.refreshToken({
+      token: refresh_token,
+      user_id: decode_refreshToken.user_id,
+      exp: decode_refreshToken.exp
+    })
+    // Cập nhật socket auth với token mới
+    socket.handshake.auth.access_token = accessToken
+    socket.handshake.auth.refresh_token = newRefreshToken
+
+    // Gửi tokens mới về client
+    socket.emit('token_refresh', {
+      accessToken,
+      refreshToken: newRefreshToken
+    })
+    return { ok: true }
   } catch (error) {
     // nếu refreshToken hết hạn thì bắn lên client cho logout
     // sau đó disconnect
-    socket.emit('auth_error', {
-      message: 'Unauthorized',
-      name: 'UnauthorizedError',
-      code: 401,
-      type: 'refresh_token_expired',
-      refreshToken: refresh_token
-    })
-    next(new Error('Unauthorized'))
+    if (error instanceof TokenExpiredError) {
+      socket.emit('auth_error', {
+        message: 'Unauthorized',
+        name: 'UnauthorizedError',
+        code: 401,
+        type: 'refresh_token_expired',
+        refreshToken: refresh_token
+      })
+      return { ok: false, reason: 'expired' }
+    }
+    return { ok: false, reason: 'invalid' }
   }
 }
 
@@ -176,11 +159,16 @@ export const handleSendMessage = async (
 
   io.to(Socket_Room.channel(channelId.toString())).emit('receive_message', response)
 
-  await emitUnreadChannel(io, {
+  const workspaceId = await getChannelWorkspaceId(channelId.toString())
+  if (workspaceId === null) return
+
+  enqueueUnread({
     channelId,
+    workspaceId,
     senderId: userId,
-    latestMessageId: Number(res.id)
-  })
+    messageId: Number(res.id),
+    createdAt: new Date().toISOString()
+  }).catch((err) => console.error('[enqueueUnread]', err))
 }
 
 // xử lý gửi gif
@@ -228,9 +216,27 @@ export const handleSendGif = async (
   io.to(Socket_Room.channel(channelId.toString())).emit('receive_message', res)
   io.to(Socket_Room.channel(channelId.toString())).emit('receive_attachments', res.attachments)
 
-  await emitUnreadChannel(io, {
+  const workspaceId = await getChannelWorkspaceId(channelId.toString())
+  if (workspaceId === null) return
+
+  enqueueUnread({
     channelId,
+    workspaceId,
     senderId: userId,
-    latestMessageId: Number(res.id)
+    messageId: Number(res.id),
+    createdAt: new Date().toISOString()
+  }).catch((err) => console.error('[enqueueUnread]', err))
+}
+
+export const isMemberChannel = async (userId: number, channelId: number): Promise<boolean> => {
+  const member = await databaseServices.prisma.channelMember.findUnique({
+    where: {
+      channelId_userId: {
+        channelId: BigInt(channelId),
+        userId: BigInt(userId)
+      }
+    },
+    select: { status: true }
   })
+  return member?.status === MemberStatus.ACTIVE
 }
