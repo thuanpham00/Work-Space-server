@@ -124,12 +124,8 @@ export const startUnreadWorker = () => {
         const recipients = members.filter((user) => !group.senders.has(user))
         if (recipients.length === 0) continue
 
-        // Tính count unread theo từng user (cutoff grouping → ~3 query/channel,
-        // không phụ thuộc số member)
         const countMap = await getUnreadCounts(channelId, recipients)
 
-        // Emit RIÊNG từng user vì count là PER-USER
-        // (mỗi user có lastReadMessageId khác nhau → không gom được 1 payload chung)
         for (const userId of recipients) {
           const count = countMap.get(userId) ?? 0
           if (count === 0) continue // không có tin chưa đọc → không cần badge

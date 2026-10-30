@@ -1,3 +1,4 @@
+import { MessageType } from '~/constants/enum'
 import databaseServices from '~/services/database.services'
 
 export const getUnreadCounts = async (channelId: number, userIds: number[]): Promise<Map<number, number>> => {
@@ -50,7 +51,7 @@ export const getUnreadCounts = async (channelId: number, userIds: number[]): Pro
         where: {
           channelId: bigChannelId,
           id: { gt: BigInt(cutoffStr) },
-          messageType: { not: 'CONFIG' }
+          messageType: { not: MessageType.CONFIG }
         }
       })
       countByCutoff.set(cutoffStr, count)
