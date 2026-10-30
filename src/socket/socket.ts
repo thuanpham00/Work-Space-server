@@ -113,8 +113,9 @@ export const initialSocket = async (httpSocket: ServerHttp) => {
       const isMember = await isMemberChannel(userId, Number(channelId))
       if (!isMember) return
 
-      if (activeChannelId && activeChannelId !== null) {
+      if (activeChannelId && activeChannelId !== channelId) {
         socket.leave(Socket_Room.channel(activeChannelId))
+        await upsertChannelReadState(userId, Number(activeChannelId))
       }
 
       socket.join(Socket_Room.channel(channelId))
@@ -126,8 +127,11 @@ export const initialSocket = async (httpSocket: ServerHttp) => {
     socket.on('leave_channel', async (channel_id) => {
       const channelId = channel_id.toString()
 
+      // Chỉ chốt read state nếu đây là channel user ĐANG xem.
+      // (Trường hợp leave đến sau join của channel khác thì join đã chốt rồi.)
       if (activeChannelId === channelId) {
         activeChannelId = null
+        await upsertChannelReadState(userId, Number(channelId))
       }
 
       socket.leave(Socket_Room.channel(channelId))

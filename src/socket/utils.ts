@@ -5,7 +5,12 @@ import databaseServices from '~/services/database.services'
 import userServices from '~/services/user.services'
 import { envConfig } from '~/utils/config'
 import { verifyToken } from '~/utils/jwt'
-import { getChannelWorkspaceId } from '~/services/redis.services'
+import {
+  getChannelLatestMessageId,
+  getChannelType,
+  getChannelWorkspaceId,
+  invalidateChannelLatestMessage
+} from '~/services/redis.services'
 import { TokenExpiredError } from 'jsonwebtoken'
 import { enqueueUnread } from '~/queues/unread.aggregator'
 
@@ -17,15 +22,7 @@ export const Socket_Room = {
 
 // cập nhật trạng thái đã đọc tin nhắn của user trong channel
 export const upsertChannelReadState = async (userId: number, channelId: number, lastReadMessageId?: number) => {
-  const latestMessageId =
-    lastReadMessageId ??
-    (
-      await databaseServices.prisma.message.findFirst({
-        where: { channelId },
-        orderBy: { id: 'desc' },
-        select: { id: true }
-      })
-    )?.id
+  const latestMessageId = lastReadMessageId ?? (await getChannelLatestMessageId(channelId.toString()))
 
   await databaseServices.prisma.channelReadState.upsert({
     where: {
@@ -159,15 +156,22 @@ export const handleSendMessage = async (
 
   io.to(Socket_Room.channel(channelId.toString())).emit('receive_message', response)
 
+  // Cache latest message đã cũ (vừa có message mới) → xoá để lần đọc sau
+  // query lại từ DB, tránh chốt read state sai.
+  await invalidateChannelLatestMessage(channelId)
+
   const workspaceId = await getChannelWorkspaceId(channelId.toString())
-  if (workspaceId === null) return
+
+  const channelType = await getChannelType(channelId.toString())
+  if (channelType === null) return
 
   enqueueUnread({
     channelId,
     workspaceId,
     senderId: userId,
     messageId: Number(res.id),
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    type: channelType
   }).catch((err) => console.error('[enqueueUnread]', err))
 }
 
@@ -216,15 +220,22 @@ export const handleSendGif = async (
   io.to(Socket_Room.channel(channelId.toString())).emit('receive_message', res)
   io.to(Socket_Room.channel(channelId.toString())).emit('receive_attachments', res.attachments)
 
+  // Cache latest message đã cũ (vừa có message mới) → xoá để lần đọc sau
+  // query lại từ DB, tránh chốt read state sai.
+  await invalidateChannelLatestMessage(channelId)
+
   const workspaceId = await getChannelWorkspaceId(channelId.toString())
-  if (workspaceId === null) return
+
+  const channelType = await getChannelType(channelId.toString())
+  if (channelType === null) return
 
   enqueueUnread({
     channelId,
     workspaceId,
     senderId: userId,
     messageId: Number(res.id),
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    type: channelType
   }).catch((err) => console.error('[enqueueUnread]', err))
 }
 

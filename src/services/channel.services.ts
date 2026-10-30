@@ -557,20 +557,24 @@ class ChannelService {
       }
     }
 
-    const lastMessage = await databaseServices.prisma.message.findMany({
+    // Lấy message MỚI NHẤT của mỗi channel.
+    // Dùng groupBy thay vì findMany không giới hạn (findMany sẽ tải TOÀN BỘ
+    // message của mọi channel vào RAM chỉ để lấy 1 message/channel).
+    const lastMessageRows = await databaseServices.prisma.message.groupBy({
+      by: ['channelId'],
       where: {
         channelId: { in: channelIds },
         messageType: { not: 'CONFIG' }
       },
-      orderBy: {
-        createdAt: 'desc'
+      _max: {
+        id: true
       }
     })
 
-    for (const message of lastMessage) {
-      const key = message.channelId.toString()
+    for (const row of lastMessageRows) {
+      const key = row.channelId.toString()
       if (!lastMessageMap.has(key)) {
-        lastMessageMap.set(key, message.id)
+        lastMessageMap.set(key, row._max.id)
       }
     }
 
@@ -581,21 +585,24 @@ class ChannelService {
         const lastMessageState = lastMessageMap.get(key)
         const findChannel = channelList.find((c) => c.channelId === channelId)
 
+        // Công thức count PHẢI khớp với socket (src/services/unread.services.ts):
+        // id > lastReadMessageId (không dùng createdAt > lastReadAt vì timestamp
+        // có thể trùng ms → thiếu message, và không đồng bộ với realtime).
         const count = await databaseServices.prisma.message.count({
           where: {
             channelId: channelId,
             messageType: { not: 'CONFIG' },
-            createdAt: {
-              gt: readChannelState?.lastReadAt ?? new Date(0)
+            id: {
+              gt: readChannelState?.lastReadMessageId ?? BigInt(0)
             }
           }
         })
 
         return {
-          workspaceId: findChannel?.channel.workspaceId,
-          channelId,
+          workspaceId: findChannel?.channel.workspaceId?.toString() ?? null,
+          channelId: channelId.toString(),
           type: findChannel?.channel.type,
-          lastMessageId: lastMessageState,
+          lastMessageId: lastMessageState?.toString() ?? null,
           count: count,
           unread: count > 0
         }

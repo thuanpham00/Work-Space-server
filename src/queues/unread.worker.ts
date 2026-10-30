@@ -1,29 +1,21 @@
 import { Worker, Job, DelayedError } from 'bullmq'
 import IORedis from 'ioredis'
+import { ChannelType } from '~/constants/enum'
+import { ChannelUnreadPayload, UnreadBatchJob } from '~/queues/unread.types'
 import { getChannelMemberIds } from '~/services/redis.services'
+import { getUnreadCounts } from '~/services/unread.services'
 import { waitForIO } from '~/socket/socket-instance'
 import { Socket_Room } from '~/socket/utils'
 import { envConfig } from '~/utils/config'
 
-// ============ TYPES ============
-export interface UnreadEvent {
-  channelId: number
-  workspaceId: number
-  senderId: number
-  messageId: number
-  createdAt: string
-}
-
-export interface UnreadBatchJob {
-  events: UnreadEvent[]
-  // Số lần job đã bị defer vì io chưa sẵn sàng.
-  // Tự quản lý vì path moveToDelayed + DelayedError KHÔNG tăng attemptsMade của BullMQ.
-  ioRetries?: number
-}
-
 interface ChannelGroup {
-  workspaceId: number
+  workspaceId: number | null
+  type: ChannelType
+  /** Id của message MỚI NHẤT trong batch */
   latestMessageId: number
+  /** Sender của message MỚI NHẤT (đi cùng latestMessageId, luôn trỏ cùng 1 message) */
+  latestSenderId: number
+  /** TẤT CẢ người gửi trong batch → dùng để lọc khỏi recipients */
   senders: Set<number>
 }
 
@@ -57,19 +49,27 @@ export const startUnreadWorker = () => {
 
       // ============ BẮT ĐẦU XỬ LÝ ============
       // Bước 1: Gom events theo channelId
-      //   - 1 channel → 1 emit (thay vì 1 emit/event)
+      //   - 1 channel → 1 group
       //   - latestMessageId = max(messageId) để client biết tin mới nhất
+      //   - latestSenderId = sender CỦA message mới nhất (cập nhật đồng bộ với latestMessageId)
       //   - senders = tập người gửi để loại khỏi recipients
       const groups = new Map<number, ChannelGroup>()
       for (const event of events) {
         const current = groups.get(event.channelId)
         if (current) {
-          current.latestMessageId = Math.max(current.latestMessageId, event.messageId)
+          // latestMessageId và latestSenderId phải cập nhật ĐỒNG BỘ
+          // để luôn trỏ tới cùng 1 message (không phụ thuộc thứ tự event trong buffer).
+          if (event.messageId > current.latestMessageId) {
+            current.latestMessageId = event.messageId
+            current.latestSenderId = event.senderId
+          }
           current.senders.add(event.senderId)
         } else {
           groups.set(event.channelId, {
             workspaceId: event.workspaceId,
+            type: event.type,
             latestMessageId: event.messageId,
+            latestSenderId: event.senderId,
             senders: new Set([event.senderId])
           })
         }
@@ -117,16 +117,34 @@ export const startUnreadWorker = () => {
 
       for (const [channelId, group] of groups) {
         const members = await getChannelMemberIds(channelId.toString())
+
+        // Loại người gửi khỏi recipients:
+        // count của họ được tính từ lastReadMessageId (chưa được update khi họ tự gửi)
+        // → nếu không loại, họ sẽ thấy badge cho chính tin mình vừa gửi.
         const recipients = members.filter((user) => !group.senders.has(user))
         if (recipients.length === 0) continue
 
-        const rooms = recipients.map((user) => Socket_Room.user(String(user)))
+        // Tính count unread theo từng user (cutoff grouping → ~3 query/channel,
+        // không phụ thuộc số member)
+        const countMap = await getUnreadCounts(channelId, recipients)
 
-        io.to(rooms).emit('channel_unread', {
-          channelId,
-          workspaceId: group.workspaceId,
-          latestMessageId: group.latestMessageId
-        })
+        // Emit RIÊNG từng user vì count là PER-USER
+        // (mỗi user có lastReadMessageId khác nhau → không gom được 1 payload chung)
+        for (const userId of recipients) {
+          const count = countMap.get(userId) ?? 0
+          if (count === 0) continue // không có tin chưa đọc → không cần badge
+
+          const payload: ChannelUnreadPayload = {
+            channelId: String(channelId),
+            workspaceId: group.workspaceId === null ? null : String(group.workspaceId),
+            type: group.type,
+            count,
+            lastMessageId: String(group.latestMessageId),
+            senderId: String(group.latestSenderId)
+          }
+
+          io.to(Socket_Room.user(String(userId))).emit('channel_unread', payload)
+        }
 
         recipientCount += recipients.length
         channelCount++

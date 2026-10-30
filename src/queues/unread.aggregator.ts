@@ -1,17 +1,10 @@
 import { unreadQueue } from './queue'
+import { UnreadEvent } from './unread.types'
 import IORedis from 'ioredis'
 import { envConfig, REDIS_KEY_PREFIX } from '~/utils/config'
 
 const FLUSH_INTERVAL = 1000 // Flush mỗi 1 giây
 const BUFFER_MAX_SIZE = 10000 // Chống tràn nếu worker chết
-
-export interface UnreadEvent {
-  channelId: number
-  workspaceId: number
-  senderId: number
-  messageId: number
-  createdAt: string
-}
 
 // ============ CONNECTION ============
 // Connection riêng (không dùng singleton ioredis để tránh conflict)

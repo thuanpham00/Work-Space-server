@@ -1,6 +1,6 @@
 import Redis from 'ioredis'
 import databaseServices from './database.services'
-import { MemberStatus } from '~/constants/enum'
+import { ChannelType, MemberStatus, MessageType } from '~/constants/enum'
 import { envConfig, REDIS_KEY_PREFIX } from '~/utils/config'
 
 /**
@@ -27,6 +27,8 @@ redis.on('error', (err) => console.error('[Redis] error:', err.message))
 
 const MEMBER_TTL = 300 // 5 phút - key tự expire sau 5 phút
 const WORKSPACE_TTL = 600 // 10 phút - workspace ít thay đổi
+const LATEST_MESSAGE_TTL = 300 // 5 phút - message mới nhất thay đổi liên tục khi có tin
+const NO_WORKSPACE = '__none__'
 
 /**
  * Lấy danh sách userId là member của channel.
@@ -76,7 +78,7 @@ export const getChannelMemberIds = async (channelId: string): Promise<number[]> 
     Type:   String
     Value:  "5"   (chuỗi, Redis không có number riêng)
  */
-const NO_WORKSPACE = '__none__'
+
 export const getChannelWorkspaceId = async (channelId: string): Promise<number | null> => {
   const key = `channel:${channelId}:workspace`
 
@@ -107,6 +109,62 @@ export const getChannelWorkspaceId = async (channelId: string): Promise<number |
   return Number(channel.workspaceId)
 }
 
+export const getChannelType = async (channelId: string): Promise<ChannelType | null> => {
+  const key = `channel:${channelId}:type`
+
+  // 1. Thử cache trước
+  const cached = await redis.get(key)
+  if (cached !== null) {
+    return cached as ChannelType
+  }
+
+  // 2. Cache miss → query DB
+  const channel = await databaseServices.prisma.channel.findFirst({
+    where: {
+      id: BigInt(channelId)
+    },
+    select: { type: true }
+  })
+  if (!channel) return null
+
+  await redis.set(key, channel.type as string, 'EX', WORKSPACE_TTL)
+  return channel.type as ChannelType
+}
+
+export const getChannelLatestMessageId = async (channelId: string): Promise<bigint | null> => {
+  const key = `channel:${channelId}:latestMessage`
+
+  // 1. Thử cache
+  const cached = await redis.get(key)
+  if (cached !== null) {
+    return BigInt(cached)
+  }
+
+  // 2. Cache miss → query DB
+  const message = await databaseServices.prisma.message.findFirst({
+    where: {
+      channelId: BigInt(channelId),
+      messageType: { not: MessageType.CONFIG }
+    },
+    orderBy: { id: 'desc' },
+    select: { id: true }
+  })
+  if (!message) return null
+
+  // 3. Ghi cache (set + expire atomic)
+  await redis.set(key, message.id.toString(), 'EX', LATEST_MESSAGE_TTL)
+
+  return message.id
+}
+
+/**
+ * Xoá cache latest message khi có message mới trong channel.
+ * Gọi sau khi tạo message.
+ */
+export const invalidateChannelLatestMessage = async (channelId: string | number): Promise<void> => {
+  await redis.del(`channel:${String(channelId)}:latestMessage`)
+}
+
 /**
  * Xoá cache khi membership thay đổi.
  * Gọi sau khi add/remove member.
@@ -119,6 +177,6 @@ export const invalidateChannelMembers = async (channelId: bigint | string | numb
  * Xoá cache khi channel.workspaceId thay đổi.
  * (Hiếm khi xảy ra, nhưng cần có để đảm bảo consistency)
  */
-export const invalidateChannelWorkspace = async (channelId: number): Promise<void> => {
-  await redis.del(`channel:${channelId}:workspace`)
+export const invalidateChannelWorkspace = (channelId: number): Promise<number> => {
+  return redis.del(`channel:${channelId}:workspace`)
 }
