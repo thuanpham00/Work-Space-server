@@ -13,19 +13,31 @@ const connection = new IORedis(envConfig.redis_url, {
 export const unreadQueue = new Queue('unread-batch', {
   connection,
   defaultJobOptions: {
-    // Retry tối đa 3 lần với exponential backoff
-    attempts: 3,
+    attempts: 3, // Retry tối đa 3 lần với exponential backoff
     backoff: { type: 'exponential', delay: 1000 },
-
-    // Dọn job đã xong (giữ 1000 job gần nhất, xoá cũ hơn)
-    removeOnComplete: { count: 1000 },
-
-    // Giữ job fail tối đa 5000 (cho debug)
-    removeOnFail: { count: 5000 }
+    removeOnComplete: { count: 1000 }, // Dọn job đã xong (giữ 1000 job gần nhất, xoá cũ hơn)
+    removeOnFail: { count: 5000 } // Giữ job fail tối đa 5000 (cho debug)
   }
 })
 
 // Log khi queue có lỗi
 unreadQueue.on('error', (err) => {
   console.error('[unreadQueue] error:', err)
+})
+
+// ============ RECONCILE QUEUE (Phase 5) ============
+// Queue để reconcile counter Redis với DB (tự sửa lệch).
+// Dùng BullMQ repeat job → chỉ 1 instance chạy mỗi lần.
+export const unreadReconcileQueue = new Queue('unread-reconcile', {
+  connection,
+  defaultJobOptions: {
+    attempts: 2,
+    backoff: { type: 'exponential', delay: 5000 },
+    removeOnComplete: { count: 100 },
+    removeOnFail: { count: 100 }
+  }
+})
+
+unreadReconcileQueue.on('error', (err) => {
+  console.error('[unreadReconcileQueue] error:', err)
 })

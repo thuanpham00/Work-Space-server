@@ -20,6 +20,7 @@ import { closeRedisAdapter } from '~/socket/redis.adapter'
 import { cleanupIdlePresence } from '~/services/presence.services'
 import { startUnreadWorker } from '~/queues/unread.worker'
 import { startUnreadAggregator } from '~/queues/unread.aggregator'
+import { scheduleReconcileJob, startReconcileWorker } from '~/queues/reconcile.worker'
 import { envConfig } from '~/utils/config'
 config()
 
@@ -74,6 +75,9 @@ databaseServices.connect().then(async () => {
 
 const httpServer = createServer(app) // tạo 1 server đựa trên app của Express
 
+// Các hàm cleanup được đăng ký trong lúc boot, chạy khi shutdown.
+const shutdownHandles: Array<() => Promise<unknown>> = []
+
 const start = async () => {
   try {
     await initialSocket(httpServer)
@@ -87,9 +91,17 @@ const start = async () => {
     startUnreadWorker()
     console.log('[BullMQ] worker + aggregator started')
 
+    // nó tự tạo job quăng vào hàng đợi 5 phút 1 lần rồi dẫn tới startReconcileWorker chạy job // xử lý đồng bộ
+    const reconcileWorker = startReconcileWorker()
+    await scheduleReconcileJob()
+    console.log('[BullMQ] reconcile worker started')
+
     setInterval(() => {
       cleanupIdlePresence().catch((err) => console.error('[Presence cleanup]', err))
     }, 60_000)
+
+    // Giữ reference để đóng khi shutdown
+    shutdownHandles.push(() => reconcileWorker.close())
   } catch (err) {
     console.error('[Server] khởi động thất bại:', err)
     process.exit(1)
@@ -105,6 +117,16 @@ const shutdown = async (signal: string) => {
   } catch (err) {
     console.error('[Server] shutdown error:', err)
   }
+
+  // Đóng worker (reconcile, unread) để không giữ connection Redis
+  for (const handle of shutdownHandles) {
+    try {
+      await handle()
+    } catch (err) {
+      console.error('[Server] shutdown handle error:', err)
+    }
+  }
+
   process.exit(0)
 }
 

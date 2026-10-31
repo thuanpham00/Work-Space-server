@@ -8,6 +8,7 @@ import {
   handleSendGif,
   handleSendMessage,
   isMemberChannel,
+  markReadToMessage,
   Socket_Room,
   upsertChannelReadState
 } from '~/socket/utils'
@@ -101,8 +102,11 @@ export const initialSocket = async (httpSocket: ServerHttp) => {
       }
     })
 
-    // đánh dấu online trong Redis
-    await setUserOnline(userId, socket.id)
+    socket.join(Socket_Room.user(String(userId)))
+
+    const emitChannelRead = (channelId: string, messageId?: string | null) => {
+      io?.to(Socket_Room.user(String(userId))).emit('channel_read', { channelId, messageId: messageId ?? null })
+    }
 
     socket.on('heartbeat', async () => {
       await setUserOnline(userId, socket.id)
@@ -115,23 +119,25 @@ export const initialSocket = async (httpSocket: ServerHttp) => {
 
       if (activeChannelId && activeChannelId !== channelId) {
         socket.leave(Socket_Room.channel(activeChannelId))
-        await upsertChannelReadState(userId, Number(activeChannelId))
+        const readId = await upsertChannelReadState(userId, Number(activeChannelId))
+        emitChannelRead(activeChannelId, readId)
       }
+
+      const readId = await upsertChannelReadState(userId, Number(channelId))
 
       socket.join(Socket_Room.channel(channelId))
       activeChannelId = channelId
 
-      await upsertChannelReadState(userId, Number(channelId))
+      emitChannelRead(channelId, readId)
     })
 
     socket.on('leave_channel', async (channel_id) => {
       const channelId = channel_id.toString()
 
-      // Chỉ chốt read state nếu đây là channel user ĐANG xem.
-      // (Trường hợp leave đến sau join của channel khác thì join đã chốt rồi.)
       if (activeChannelId === channelId) {
         activeChannelId = null
-        await upsertChannelReadState(userId, Number(channelId))
+        const readId = await upsertChannelReadState(userId, Number(channelId))
+        emitChannelRead(channelId, readId)
       }
 
       socket.leave(Socket_Room.channel(channelId))
@@ -151,13 +157,31 @@ export const initialSocket = async (httpSocket: ServerHttp) => {
       await handleSendGif(io as Server, { userId, user_id, data })
     })
 
+    socket.on('mark_read', async (data) => {
+      const channelId = data?.channel_id?.toString()
+      const messageId = Number(data?.message_id)
+      if (!channelId || !Number.isFinite(messageId) || messageId <= 0) return
+
+      // Chỉ chấp nhận khi user đang mở đúng channel này trên socket này.
+      if (activeChannelId !== channelId) return
+
+      const isMember = await isMemberChannel(userId, Number(channelId))
+      if (!isMember) return
+
+      const isLatest = await markReadToMessage(userId, Number(channelId), messageId)
+      if (isLatest) {
+        // Đồng bộ các tab/thiết bị khác của cùng user.
+        emitChannelRead(channelId, String(messageId))
+      }
+    })
+
     // sự kiện mặc định của socket server - nếu ngắt kết nối (client ngắt, đóng tab) -> nó chạy
     socket.on('disconnect', async () => {
       await setUserOffline(userId, socket.id)
     })
 
-    // join room user
-    socket.join(Socket_Room.user(user_id))
+    // đánh dấu online trong Redis
+    await setUserOnline(userId, socket.id)
 
     const workspaceMembers = await databaseServices.prisma.workspaceMember.findMany({
       where: { userId },

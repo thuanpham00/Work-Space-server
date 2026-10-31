@@ -1,7 +1,7 @@
 # Note — Redis Commands đang sử dụng trong dự án
 
-> Cập nhật: Phase 7 (List — Aggregator buffer)
-> Tổng cộng: **14 lệnh** + **1 stream**
+> Cập nhật: Phase 7 (List — Aggregator buffer) + Hash (Unread Counter)
+> Tổng cộng: **20 lệnh** + **1 stream**
 
 ---
 
@@ -20,9 +20,15 @@
 | 9   | `ZCARD`            | Sorted Set   | `presence.services.ts:32, 42, 70`                 | Đếm số socket đang active                 |
 | 10  | `ZREMRANGEBYSCORE` | Sorted Set   | `presence.services.ts:66`                         | Worker xóa socket idle                    |
 | 11  | `LPUSH`            | List         | `queues/unread.aggregator.ts`                     | Đẩy event vào buffer (O(1), đầu list)     |
-| 12  | `LRANGE`           | List         | `queues/unread.aggregator.ts`                     | Lấy toàn bộ events trong buffer            |
-| 13  | `LTRIM`            | List         | `queues/unread.aggregator.ts`                     | Giới hạn độ dài buffer (chống tràn)        |
-| 14  | `LLEN`             | List         | `queues/unread.aggregator.ts`                     | Đếm số event trong buffer                  |
+| 12  | `LRANGE`           | List         | `queues/unread.aggregator.ts`                     | Lấy toàn bộ events trong buffer           |
+| 13  | `LTRIM`            | List         | `queues/unread.aggregator.ts`                     | Giới hạn độ dài buffer (chống tràn)       |
+| 14  | `LLEN`             | List         | `queues/unread.aggregator.ts`                     | Đếm số event trong buffer                 |
+| 15  | `HSET`             | Hash         | `unread.services.ts`                              | Ghi/reset 1 field của hash unread         |
+| 16  | `HGET`             | Hash         | `unread.services.ts`                              | Đọc 1 field (unread count của 1 user)     |
+| 17  | `HINCRBY`          | Hash         | `unread.services.ts`                              | Tăng/giảm counter unread (atomic O(1))    |
+| 18  | `HMGET`            | Hash         | `unread.services.ts`                              | Đọc N field trong 1 round trip            |
+| 19  | `HGETALL`          | Hash         | `unread.services.ts`                              | Đọc toàn bộ field của hash                |
+| 20  | `HDEL`             | Hash         | `unread.services.ts`                              | Xóa 1 field (không xóa cả key)            |
 | -   | `SCAN` (stream)    | Generic      | `presence.services.ts:53`                         | Duyệt tất cả key `presence:user:*`        |
 
 ---
@@ -91,16 +97,16 @@ Score:   Date.now() (millisecond) — timestamp lần cuối heartbeat
 
 List trong Redis = mảng các chuỗi, **có thứ tự**, cho phép thêm/xóa ở **2 đầu**.
 
-| Lệnh      | Cú pháp                                    | Ví dụ                                                    |
-| --------- | ------------------------------------------ | -------------------------------------------------------- |
-| `LPUSH`   | `LPUSH key element [element ...]`          | `LPUSH chat:unread:buffer '{"messageId":1001}'`         |
-| `RPUSH`   | `RPUSH key element [element ...]`          | `RPUSH chat:queue job1`                                 |
-| `LPOP`    | `LPOP key`                                | `LPOP chat:unread:buffer` → `"{\"messageId\":1001}"`      |
-| `RPOP`    | `RPOP key`                                | `RPOP bull:unread-batch:wait`                           |
-| `LRANGE`  | `LRANGE key start stop`                   | `LRANGE chat:unread:buffer 0 -1` → toàn bộ elements    |
-| `LLEN`    | `LLEN key`                                | `LLEN chat:unread:buffer` → `1000`                      |
-| `LTRIM`   | `LTRIM key start stop`                    | `LTRIM chat:unread:buffer 0 9999`                       |
-| `BLPOP`   | `BLPOP key [key ...] timeout`             | `BLPOP queue 5` → chặn tới khi có item                  |
+| Lệnh     | Cú pháp                           | Ví dụ                                                |
+| -------- | --------------------------------- | ---------------------------------------------------- |
+| `LPUSH`  | `LPUSH key element [element ...]` | `LPUSH chat:unread:buffer '{"messageId":1001}'`      |
+| `RPUSH`  | `RPUSH key element [element ...]` | `RPUSH chat:queue job1`                              |
+| `LPOP`   | `LPOP key`                        | `LPOP chat:unread:buffer` → `"{\"messageId\":1001}"` |
+| `RPOP`   | `RPOP key`                        | `RPOP bull:unread-batch:wait`                        |
+| `LRANGE` | `LRANGE key start stop`           | `LRANGE chat:unread:buffer 0 -1` → toàn bộ elements  |
+| `LLEN`   | `LLEN key`                        | `LLEN chat:unread:buffer` → `1000`                   |
+| `LTRIM`  | `LTRIM key start stop`            | `LTRIM chat:unread:buffer 0 9999`                    |
+| `BLPOP`  | `BLPOP key [key ...] timeout`     | `BLPOP queue 5` → chặn tới khi có item               |
 
 **Cấu trúc key (buffer của Aggregator):**
 
@@ -112,15 +118,15 @@ Value:  [ '{"channelId":10,"messageId":1001}', '{"channelId":10,"messageId":1002
 
 #### Đặc điểm & đánh đổi
 
-| Đặc điểm | Chi tiết |
-| --------- | -------- |
-| **Thứ tự** | Có (FIFO) — phần tử push trước nằm trước |
+| Đặc điểm                | Chi tiết                                                     |
+| ----------------------- | ------------------------------------------------------------ |
+| **Thứ tự**              | Có (FIFO) — phần tử push trước nằm trước                     |
 | **Truy cập theo index** | **KHÔNG** — không có `list[0]`, phải `LRANGE key 0 0` (O(N)) |
-| **Đẩy vào đầu/tail** | `LPUSH`/`RPUSH` đều **O(1)** |
-| **Xóa đầu/tail** | `LPOP`/`RPOP` đều **O(1)** |
-| **Lấy phần tử giữa** | `LRANGE` là **O(N + S)** — tốn khi list dài |
-| **Trùng lặp** | Cho phép (khác Set — Set là tập hợp không trùng) |
-| **Blocking** | `BLPOP`/`BRPOP` — connection bị block tới khi có item |
+| **Đẩy vào đầu/tail**    | `LPUSH`/`RPUSH` đều **O(1)**                                 |
+| **Xóa đầu/tail**        | `LPOP`/`RPOP` đều **O(1)**                                   |
+| **Lấy phần tử giữa**    | `LRANGE` là **O(N + S)** — tốn khi list dài                  |
+| **Trùng lặp**           | Cho phép (khác Set — Set là tập hợp không trùng)             |
+| **Blocking**            | `BLPOP`/`BRPOP` — connection bị block tới khi có item        |
 
 > ⚠️ **Đừng dùng List làm "mảng có index"** — đó là job của Sorted Set hoặc Hash. List chỉ nên dùng cho **queue / buffer / stack**, tức là thao tác ở 2 đầu.
 
@@ -145,10 +151,10 @@ Mỗi 1 giây  → LRANGE 0 -1 lấy hết       (O(N))          ← Flush
 
 #### `LPUSH` vs `RPUSH` — chọn chiều nào?
 
-| Lệnh    | Thêm vào đâu | Khi xử lý bằng `LPOP` | FIFO? |
-| ------- | ------------ | ---------------------- | ----- |
-| `LPUSH` | **đầu** list | Lấy từ đầu → đúng thứ tự push | ✅ FIFO |
-| `RPUSH` | **cuối** list | Lấy từ đầu → ngược thứ tự push  | ❌ LIFO |
+| Lệnh    | Thêm vào đâu  | Khi xử lý bằng `LPOP`          | FIFO?   |
+| ------- | ------------- | ------------------------------ | ------- |
+| `LPUSH` | **đầu** list  | Lấy từ đầu → đúng thứ tự push  | ✅ FIFO |
+| `RPUSH` | **cuối** list | Lấy từ đầu → ngược thứ tự push | ❌ LIFO |
 
 Buffer dùng `LPUSH` + `LRANGE`/`DEL` nên không vấn đề. Còn BullMQ dùng `LPUSH` (đẩy job mới vào đầu) + `BRPOP` (lấy từ cuối) → **job cũ được xử lý trước** = FIFO thật sự.
 
@@ -156,7 +162,7 @@ Buffer dùng `LPUSH` + `LRANGE`/`DEL` nên không vấn đề. Còn BullMQ dùng
 
 ```typescript
 await connection.lpush(BUFFER_KEY, JSON.stringify(event))
-await connection.ltrim(BUFFER_KEY, 0, BUFFER_MAX_SIZE - 1)  // giữ 10000 phần tử đầu
+await connection.ltrim(BUFFER_KEY, 0, BUFFER_MAX_SIZE - 1) // giữ 10000 phần tử đầu
 ```
 
 - `LTRIM key start stop` — giữ lại các phần tử từ index `start` đến `stop`, **xoá phần còn lại**.
@@ -177,7 +183,91 @@ BRPOP bull:unread-batch:wait 5
 
 ---
 
-### 5️⃣ Key-level (áp dụng cho mọi kiểu)
+### 5️⃣ Hash (object — key/value field)
+
+Hash = **bảng băm field → value** bên trong **1 key**. Dùng khi 1 đối tượng có nhiều thuộc tính cần đọc/ghi độc lập.
+
+| Lệnh      | Cú pháp                                 | Ví dụ                                        |
+| --------- | --------------------------------------- | -------------------------------------------- |
+| `HSET`    | `HSET key field value [field value...]` | `HSET unread:10 15 3`                        |
+| `HGET`    | `HGET key field`                        | `HGET unread:10 15` → `"3"`                  |
+| `HMGET`   | `HMGET key field [field ...]`           | `HMGET unread:10 15 20 30` → `["3","0","7"]` |
+| `HGETALL` | `HGETALL key`                           | `HGETALL unread:10` → `{15:"3", 20:"0"}`     |
+| `HINCRBY` | `HINCRBY key field increment`           | `HINCRBY unread:10 15 1` → `"4"`             |
+| `HDEL`    | `HDEL key field [field ...]`            | `HDEL unread:10 15`                          |
+| `HLEN`    | `HLEN key`                              | `HLEN unread:10` → `2`                       |
+| `HEXISTS` | `HEXISTS key field`                     | `HEXISTS unread:10 15` → `1`                 |
+
+**Cấu trúc key hiện tại (unread counter):**
+
+```
+Key:    chat:unread:10
+Type:   Hash
+Fields:
+  "15" → "3"      ← userId → số tin chưa đọc
+  "20" → "0"
+  "30" → "7"
+```
+
+#### Đặc đểm & đánh đổi
+
+| Đặc điểm                         | Chi tiết                                                                      |
+| -------------------------------- | ----------------------------------------------------------------------------- |
+| **Truy cập theo field**          | ✅ O(1) — `HGET key field` không cần đọc cả object                            |
+| **Đọc nhiều field**              | ✅ `HMGET` 1 round trip cho N field (String/Set phải N lệnh)                  |
+| **Atomic increment**             | ✅ `HINCRBY` atomic — không race dù nhiều instance                            |
+| **Ghi 1 field**                  | ✅ `HSET` không ảnh hưởng field khác (không cần đọc→ghi lại cả object)        |
+| **Cấu trúc field**               | Chỉ là **string** — muốn số phải tự parse (`Number(field)`)                   |
+| **Trùng lặp**                    | ❌ field là duy nhất — `HSET` ghi đè, không cộng dồn (dùng `HINCRBY` để cộng) |
+| **Không có TTL riêng cho field** | TTL là của **cả key** — xóa 1 field không tự refresh TTL                      |
+| **Tìm field theo điều kiện**     | ❌ không có — phải `HGETALL` rồi lọc ở app (giống Set)                        |
+
+#### Tại sao Hash, không phải String / Set / Sorted Set?
+
+| Lệnh cần làm                         | Hash                 | String                      | Set                        | Sorted Set               |
+| ------------------------------------ | -------------------- | --------------------------- | -------------------------- | ------------------------ |
+| `HINCRBY unread:10 15 1` (tăng 1)    | ✅ O(1), atomic      | ❌ phải đọc→cộng→ghi (race) | ❌ race                    | ❌ race                  |
+| `HMGET unread:10 15 20 30`           | ✅ 1 RTT cho N field | ❌ N lần `GET`              | ❌ phải `SMEMBERS` rồi lọc | ❌ phải `ZRANGE` rồi lọc |
+| `HSET unread:10 20 0` (reset 1 user) | ✅ chỉ 1 field       | ❌ xóa cả key               | ❌ phải xóa rồi add lại    | ❌ tương tự              |
+
+→ Hash là lựa chọn **duy nhất** thoả cả 3 yêu cầu: increment atomic, đọc nhiều field 1 lần, reset 1 field.
+
+#### Hash vs Set — khác nhau chỗ nào?
+
+|                               | Hash                  | Set                              |
+| ----------------------------- | --------------------- | -------------------------------- |
+| Cấu trúc                      | `field → value`       | `member` (chỉ có 1 giá trị)      |
+| Có "giá trị" cho mỗi phần tử? | ✅ có (value)         | ❌ không                         |
+| Đếm                           | `HLEN`                | `SCARD`                          |
+| Tăng giá trị                  | `HINCRBY`             | ❌ không có (set không có value) |
+| Ví dụ trong dự án             | unread count per user | member list của channel          |
+
+> 📌 Quy tắc nhớ: **Set = tập hợp không trùng** (chỉ cần biết "có/không"), **Hash = object có thuộc tính** (cần biết "giá trị là gì").
+
+#### Ví dụ dùng trong dự án (unread counter)
+
+```typescript
+// Tăng unread cho 1 user — atomic, không cần đọc trước
+await redis.hincrby(unreadKey(channelId), String(userId), 1)
+
+// Tăng cho N user trong 1 round trip (pipeline = 1 RTT)
+const pipeline = redis.pipeline()
+for (const userId of userIds) {
+  pipeline.hincrby(key, String(userId), 1)
+}
+pipeline.expire(key, UNREAD_TTL)
+await pipeline.exec()
+
+// Reset 1 user về 0 (khi user đọc channel)
+await redis.hset(unreadKey(channelId), String(userId), 0)
+
+// Đọc nhiều user 1 lần
+const counts = await redis.hmget(unreadKey(channelId), ...userIds.map(String))
+```
+
+---
+
+### 6️⃣ Key-level (áp dụng cho mọi kiểu)
 
 | Lệnh     | Cú pháp                                     | Ví dụ                               |
 | -------- | ------------------------------------------- | ----------------------------------- |
@@ -194,27 +284,29 @@ BRPOP bull:unread-batch:wait 5
 
 ## 🧠 Ghi nhớ nhanh
 
-| Nhóm             | Khi nào dùng                                                |
-| ---------------- | ----------------------------------------------------------- |
-| String           | Cache 1 giá trị đơn (VD: workspaceId)                       |
-| Set              | Cache danh sách không trùng (VD: members)                   |
-| Sorted Set       | Cache danh sách có thứ tự / cần score để TTL (VD: presence) |
-| List             | Queue / buffer FIFO — thêm xóa ở 2 đầu (VD: unread buffer) |
-| EXPIRE           | Cleanup key sau X giây không hoạt động                      |
-| ZREMRANGEBYSCORE | Cleanup member cũ trong sorted set                          |
-| LTRIM            | Giới hạn độ dài List buffer (chống tràn)                   |
+| Nhóm             | Khi nào dùng                                                                    |
+| ---------------- | ------------------------------------------------------------------------------- |
+| String           | Cache 1 giá trị đơn (VD: workspaceId)                                           |
+| Set              | Cache danh sách không trùng (VD: members)                                       |
+| Sorted Set       | Cache danh sách có thứ tự / cần score để TTL (VD: presence)                     |
+| List             | Queue / buffer FIFO — thêm xóa ở 2 đầu (VD: unread buffer)                      |
+| Hash             | Object có nhiều field, cần đọc/ghi từng field + tăng counter (VD: unread count) |
+| EXPIRE           | Cleanup key sau X giây không hoạt động                                          |
+| ZREMRANGEBYSCORE | Cleanup member cũ trong sorted set                                              |
+| LTRIM            | Giới hạn độ dài List buffer (chống tràn)                                        |
+| HINCRBY          | Tăng/giảm counter theo field — atomic, không race                               |
 
 ### Chọn kiểu dữ liệu nhanh
 
-| Cần gì?                            | Dùng       | Lệnh then chốt        |
-| ---------------------------------- | ---------- | --------------------- |
-| 1 giá trị đơn                      | String     | `GET` / `SET EX`      |
-| Tập hợp không trùng                | Set        | `SADD` / `SMEMBERS`   |
-| Cần thứ tự theo score / timestamp  | Sorted Set | `ZADD` / `ZRANGE`     |
-| FIFO, thêm-xóa ở 2 đầu, buffer    | List       | `LPUSH` / `BRPOP`    |
-| Lấy field cụ thể trong 1 object   | Hash       | `HSET` / `HGETALL`    |
+| Cần gì?                           | Dùng       | Lệnh then chốt          |
+| --------------------------------- | ---------- | ----------------------- |
+| 1 giá trị đơn                     | String     | `GET` / `SET EX`        |
+| Tập hợp không trùng               | Set        | `SADD` / `SMEMBERS`     |
+| Cần thứ tự theo score / timestamp | Sorted Set | `ZADD` / `ZRANGE`       |
+| FIFO, thêm-xóa ở 2 đầu, buffer    | List       | `LPUSH` / `BRPOP`       |
+| Lấy field cụ thể trong 1 object   | Hash       | `HSET` / `HGETALL`      |
 | Broadcast 1-n, không cần lưu      | Pub/Sub    | `PUBLISH` / `SUBSCRIBE` |
-| Event stream có replay             | Stream     | `XADD` / `XREAD`      |
+| Event stream có replay            | Stream     | `XADD` / `XREAD`        |
 
 ---
 
@@ -265,15 +357,20 @@ Mỗi key trong Redis có **3 thuộc tính**:
 │  chat:unread:buffer              │
 │  Value: [ "{...}", "{...}" ]      │  ← có thứ tự, trùng lặp OK
 └───────────────────────────────────┘
+
+┌─ Hash ───────────────────────────┐
+│  chat:unread:10                  │
+│  Value: { "15": "3", "20": "0" } │  ← field → value, đọc/ghi từng field
+└───────────────────────────────────┘
 ```
 
 ---
 
 ## 🔄 2 kiểu comment thường gặp trong code Redis
 
-| Loại | Vai trò | Ví dụ |
-|---|---|---|
-| **Mô tả cấu trúc (Shape)** | Cho biết data trông như nào | `Type: Set / Members: ["15", "20"]` |
+| Loại                             | Vai trò                        | Ví dụ                                                      |
+| -------------------------------- | ------------------------------ | ---------------------------------------------------------- |
+| **Mô tả cấu trúc (Shape)**       | Cho biết data trông như nào    | `Type: Set / Members: ["15", "20"]`                        |
 | **Giải thích logic (Reasoning)** | Cho biết tại sao code viết vậy | `EXPIRE = 2x PRESENCE_TTL (cleanup nếu offline hoàn toàn)` |
 
 Hai kiểu này **khác nhau**, không thay thế nhau.
@@ -287,8 +384,10 @@ Hai kiểu này **khác nhau**, không thay thế nhau.
 | Phase 1-3 (Cache)  | `GET`, `SET EX`, `DEL`, `SADD`, `SMEMBERS`, `EXPIRE`         |
 | Phase 4 (Adapter)  | (không dùng lệnh trực tiếp — qua `@socket.io/redis-adapter`) |
 | Phase 5 (Presence) | `ZADD`, `ZREM`, `ZCARD`, `ZREMRANGEBYSCORE`, `SCAN`          |
-| Phase 6 (BullMQ)   | (BullMQ tự quản lý — `LPUSH`/`BRPOP`/`BRPOPLPUSH`)          |
+| Phase 6 (BullMQ)   | (BullMQ tự quản lý — `LPUSH`/`BRPOP`/`BRPOPLPUSH`)           |
 | Phase 7 (List)     | `LPUSH`, `LRANGE`, `LTRIM`, `LLEN`                           |
+| Phase 8-9 (Hash)   | `HSET`, `HGET`, `HINCRBY`, `HMGET`, `HGETALL`, `HDEL`        |
+| Unread P3-5        | `ZRANGEBYSCORE`, `ZREMRANGEBYSCORE` (ZSET `unread:active`)   |
 
 ---
 
@@ -319,8 +418,8 @@ Presence dùng **2 cơ chế chạy song song** để đảm bảo Redis không 
 
 ```typescript
 export const setUserOnline = async (userId, socketId) => {
-  await redis.zadd(key, Date.now(), socketId)    // refresh score
-  await redis.expire(key, PRESENCE_TTL * 2)      // reset TTL = 120s
+  await redis.zadd(key, Date.now(), socketId) // refresh score
+  await redis.expire(key, PRESENCE_TTL * 2) // reset TTL = 120s
 }
 ```
 
@@ -331,7 +430,7 @@ export const setUserOnline = async (userId, socketId) => {
 
 ```typescript
 export const cleanupIdlePresence = async () => {
-  const cutoff = Date.now() - PRESENCE_TTL * 1000  // = now - 60s
+  const cutoff = Date.now() - PRESENCE_TTL * 1000 // = now - 60s
   // ZREMRANGEBYSCORE xóa mọi member có score ≤ cutoff
 }
 ```
@@ -342,11 +441,11 @@ export const cleanupIdlePresence = async () => {
 
 ### Tại sao cần cả 2?
 
-| Tình huống | Chỉ heartbeat | Chỉ cron | Cả hai |
-|---|---|---|---|
-| Client đóng tab sạch sẽ | ✅ | ❌ | ✅ |
-| Client mất mạng (không có disconnect) | ✅ (timeout ngắn) | ✅ (timeout 60s) | ✅ |
-| Server crash + restart | ✅ (cron tiếp tục) | ❌ | ✅ |
+| Tình huống                            | Chỉ heartbeat      | Chỉ cron         | Cả hai |
+| ------------------------------------- | ------------------ | ---------------- | ------ |
+| Client đóng tab sạch sẽ               | ✅                 | ❌               | ✅     |
+| Client mất mạng (không có disconnect) | ✅ (timeout ngắn)  | ✅ (timeout 60s) | ✅     |
+| Server crash + restart                | ✅ (cron tiếp tục) | ❌               | ✅     |
 
 ### Timeline ví dụ (PRESENCE_TTL = 60s)
 
@@ -360,10 +459,10 @@ T=210s: Nếu cả 2 tab đều chết → EXPIRE hết → key tự xóa
 
 ### `ZREM` vs `ZREMRANGEBYSCORE`
 
-| Hàm | Xóa theo | Dùng ở đâu |
-|---|---|---|
-| `ZREM` | Member name cụ thể | `setUserOffline` — biết socketId disconnect |
-| `ZREMRANGEBYSCORE` | **Khoảng score** | `cleanupIdlePresence` — xóa theo cutoff |
+| Hàm                | Xóa theo           | Dùng ở đâu                                  |
+| ------------------ | ------------------ | ------------------------------------------- |
+| `ZREM`             | Member name cụ thể | `setUserOffline` — biết socketId disconnect |
+| `ZREMRANGEBYSCORE` | **Khoảng score**   | `cleanupIdlePresence` — xóa theo cutoff     |
 
 `ZREMRANGEBYSCORE key -inf cutoff` = xóa mọi member có score ≤ cutoff.
 
@@ -374,7 +473,7 @@ T=210s: Nếu cả 2 tab đều chết → EXPIRE hết → key tự xóa
 ```typescript
 const removed = await redis.zremrangebyscore(key, '-inf', cutoff)
 const count = await redis.zcard(key)
-if (count === 0) await redis.del(key)   // rỗng → xóa key
+if (count === 0) await redis.del(key) // rỗng → xóa key
 ```
 
 **Tại sao xóa key rỗng?** Tiết kiệm memory, tránh key "ma" tồn tại mãi.
@@ -383,13 +482,13 @@ if (count === 0) await redis.del(key)   // rỗng → xóa key
 
 ## 📡 Broadcast — Phase nào làm gì?
 
-| Phase | Tên | Vai trò | Có broadcast? |
-|---|---|---|---|
-| 1-3 | Cache | Giảm query DB | ❌ |
-| **4** | **Redis Adapter** | **Multi-instance Socket.IO** | **✅ (cơ sở)** |
-| 5 | Presence | User online | ❌ |
-| 6 | BullMQ Worker | Tách job nặng | ❌ |
-| 7 | Aggregator | Gom job trước khi push | ❌ |
+| Phase | Tên                | Vai trò                           | Có broadcast?       |
+| ----- | ------------------ | --------------------------------- | ------------------- |
+| 1-3   | Cache              | Giảm query DB                     | ❌                  |
+| **4** | **Redis Adapter**  | **Multi-instance Socket.IO**      | **✅ (cơ sở)**      |
+| 5     | Presence           | User online                       | ❌                  |
+| 6     | BullMQ Worker      | Tách job nặng                     | ❌                  |
+| 7     | Aggregator         | Gom job trước khi push            | ❌                  |
 | **8** | **Pub/Sub Notify** | **Cross-instance emit từ Worker** | **✅ (hoàn thiện)** |
 
 **Hai phase broadcast:**
@@ -450,13 +549,13 @@ Client --LPUSH key v----> Server
 Client <---- "OK" ------ Server     ← tổng = 1 RTT
 ```
 
-**Chi phí RTT** = *số round-trip × thời gian mỗi RTT*. Đây là độ trễ do **mạng**, tách biệt với độ trễ do **xử lý**.
+**Chi phí RTT** = _số round-trip × thời gian mỗi RTT_. Đây là độ trễ do **mạng**, tách biệt với độ trễ do **xử lý**.
 
-| Khoảng cách | RTT điển hình |
-| ------------ | ------------- |
-| Cùng máy / LAN | ~0.1 – 1 ms |
-| Cloud + client cùng khu vực | ~10 – 30 ms |
-| Cloud + client xa (EU/US) | ~150 – 250 ms |
+| Khoảng cách                 | RTT điển hình |
+| --------------------------- | ------------- |
+| Cùng máy / LAN              | ~0.1 – 1 ms   |
+| Cloud + client cùng khu vực | ~10 – 30 ms   |
+| Cloud + client xa (EU/US)   | ~150 – 250 ms |
 
 **Giảm chi phí RTT:**
 
@@ -504,13 +603,13 @@ const connection = new IORedis(url, { maxRetriesPerRequest: null })
 
 ### Vì sao Redis phù hợp làm storage cho Queue?
 
-| Tính chất Redis | Lợi ích cho Queue |
-|---|---|
-| **Atomic** | Mỗi job chỉ đến 1 worker |
-| **Persistent** (AOF/RDB) | Server crash không mất job |
-| **Pub/Sub** | Worker listen event real-time |
-| **Sorted Set** | Score = timestamp, query theo thời gian |
-| **Nhanh** | Push/pop ~1ms |
+| Tính chất Redis          | Lợi ích cho Queue                       |
+| ------------------------ | --------------------------------------- |
+| **Atomic**               | Mỗi job chỉ đến 1 worker                |
+| **Persistent** (AOF/RDB) | Server crash không mất job              |
+| **Pub/Sub**              | Worker listen event real-time           |
+| **Sorted Set**           | Score = timestamp, query theo thời gian |
+| **Nhanh**                | Push/pop ~1ms                           |
 
 ---
 
@@ -637,39 +736,107 @@ export const startUnreadAggregator = () => {
 
 ### ⚠️ Thứ tự bắt buộc: `LRANGE` → `DEL` → `queue.add`
 
-| Sai | Hậu quả |
-| --- | ------- |
-| `DEL` trước `LRANGE` | **Mất data** — xoá trước khi lấy |
+| Sai                     | Hậu quả                             |
+| ----------------------- | ----------------------------------- |
+| `DEL` trước `LRANGE`    | **Mất data** — xoá trước khi lấy    |
 | `queue.add` trước `DEL` | Event mới push vào bị `DEL` xoá mất |
 
 Vì `DEL` chạy trước khi xử lý → event mới push sau đó rơi vào buffer rỗng → interval kế tiếp lấy được. Nhưng **nếu server crash giữa `LRANGE` và `queue.add`** → mất event → buffer chỉ là tạm, **không được làm source of truth**.
 
 ### Vì sao chọn List mà không chọn Set / Sorted Set?
 
-| Kiểu    | Có thứ tự? | Trùng lặp? | Đánh giá                                    |
-| ------- | ----------- | ---------- | ------------------------------------------- |
-| **List** | ✅ FIFO      | ✅ OK       | **Đúng** — buffer là hàng đợi, cần thứ tự  |
-| Set     | ❌           | ❌          | Mất thứ tự, mất event trùng                  |
-| Sorted Set | ✅ (score)  | ❌          | Overkill — cần score, không cần query range |
+| Kiểu       | Có thứ tự? | Trùng lặp? | Đánh giá                                    |
+| ---------- | ---------- | ---------- | ------------------------------------------- |
+| **List**   | ✅ FIFO    | ✅ OK      | **Đúng** — buffer là hàng đợi, cần thứ tự   |
+| Set        | ❌         | ❌         | Mất thứ tự, mất event trùng                 |
+| Sorted Set | ✅ (score) | ❌         | Overkill — cần score, không cần query range |
 
-### Lệnh List thường dùng trong dự án
+---
 
-| Lệnh      | Dùng ở đâu                        | Ghi chú |
-| --------- | --------------------------------- | ------- |
-| `LPUSH`   | `enqueueUnread()` — đẩy event     | O(1), thêm vào đầu |
-| `LRANGE`  | Aggregator — lấy toàn bộ          | `0 -1` = tất cả, O(N) |
-| `LTRIM`   | `enqueueUnread()` — giới hạn size | Chống buffer phình vô hạn |
-| `LLEN`    | Kiểm tra số event trước flush     | Tránh tạo job rỗng |
-| `DEL`     | Xoá buffer sau khi lấy            | Xoá key cả list |
-| `BRPOP`   | BullMQ Worker — lấy job (internal) | Block, không poll |
+## 🔢 Unread Counter — Redis Hash làm nguồn sự thật (Phase 3–5)
 
-### So sánh List vs BullMQ (khi nào dùng gì)
+### Kiến trúc
 
-| Tiêu chí            | List buffer (Aggregator) | BullMQ queue trực tiếp |
-| ------------------- | ------------------------ | ---------------------- |
-| Ghi vào             | `LPUSH` — 1 RTT, rất rẻ | `queue.add()` — nặng hơn (Lua script, nhiều key) |
-| Số job/giây         | 1 job / giây             | 1 job / message (1000/s) |
-| Retry khi fail      | ❌ không có               | ✅ exponential backoff   |
-| Stalled detection   | ❌                        | ✅ heartbeat 30s        |
-| Độ trễ              | +1 giây (chờ flush)      | ~5–50ms                |
-| Phù hợp khi         | Cần batch, không cần retry ngay | Cần retry + độ trễ thấp |
+```
+                    ┌──────────────────────────┐
+   GHI (write path)  │  Redis Hash              │
+   handleSendMessage │  chat:unread:{channelId} │  ← nguồn sự thật
+   handleSendGif    │  field=userId             │
+                    │  value=count              │
+                    └───────────┬──────────────┘
+                                │
+              ┌─────────────────┴──────────────────┐
+              ▼                                    ▼
+   ĐỌC (read path)                        ĐỌC (REST)
+   Worker → HMGET                    getUnreadChannel → HGET
+   (socket_unread emit)              (+ fallback DB nếu miss)
+```
+
+### Các key liên quan
+
+| Key                       | Type       | Mục đích                                                     | TTL            |
+| ------------------------- | ---------- | ------------------------------------------------------------ | -------------- |
+| `chat:unread:{channelId}` | Hash       | Count unread của từng user trong channel                     | 7 ngày         |
+| `chat:unread:active`      | Sorted Set | Channel "đang hoạt động" (member=channelId, score=timestamp) | không (tự dọn) |
+
+### Flow đầy đủ
+
+```
+1. A gửi tin
+   → message.create()                     (DB, bắt buộc)
+   → incrementUnreadBatch(ch, members)    (Redis HINCRBY × N, 1 pipeline)
+   → markChannelActive(ch)                (Redis ZADD)
+   → enqueueUnread()                      (Redis LPUSH buffer)
+
+2. Aggregator flush (1s) → BullMQ job → Worker
+   → HMGET ch {members}                   (1 RTT cho N user)
+   → emit 'channel_unread' per-user
+
+3. B mở channel (đọc)
+   → upsertChannelReadState()             (DB upsert)
+   → resetUnread(ch, B)                   (Redis HSET field 0)
+
+4. B mở app (REST /channels/unread)
+   → getUnreadChannel()
+   → getUnreadCountForUser()              (Redis HGET, miss → fallback DB → set lại)
+
+5. Reconcile job (mỗi 5 phút)
+   → ZRANGEBYSCORE unread:active -inf (now-10m)   → lấy channel hot
+   → computeUnreadCountsFromDb()          (DB chân lý)
+   → so sánh + HSET ghi đè lệch
+```
+
+### Quy tắc vàng
+
+| Quy tắc                                        | Lý do                                              |
+| ---------------------------------------------- | -------------------------------------------------- |
+| Increment **ở write path**, không ở worker     | Worker retry job → đếm thừa                        |
+| Increment **sau** `message.create`             | Create fail → không increment                      |
+| Increment **trước** `enqueueUnread`            | Worker đọc count đã cập nhật                       |
+| Reset Redis **sau** upsert DB                  | Upsert fail → giữ count cũ (an toàn hơn mất count) |
+| Dùng `HDEL` (không `DEL`) để xoá 1 user        | `DEL` xoá cả hash → mất count user khác            |
+| `EXPIRE` **trong cùng pipeline** sau `HINCRBY` | TTL phải được set lại mỗi lần ghi                  |
+
+### Reconcile — tự lành khi lệch
+
+Redis có thể lệch DB (Redis restart mất data, message tạo ngoài socket path, `incrementUnreadBatch` fail...).
+
+```
+DB (chân lý) ──đối chiếu──▶ Redis (cache) ──ghi đè──▶ Redis
+```
+
+- Chỉ reconcile channel **hot** (ZSET `unread:active`, lookback 10 phút) → không quét toàn bộ channel
+- Chi phí: ~4 query DB / channel / 5 phút
+- `reconcileChannel` dùng `HMGET` thô (không qua `getUnreadCounts`) để phân biệt:
+  - `null` → field chưa tồn tại (Redis bị DEL) → **phải tạo lại**
+  - `"0"` → field tồn tại, count = 0 → đã đúng
+
+> Nếu dùng `getUnreadCounts` (gộp cả 2 thành 0) → field bị xoá sẽ không được tạo lại → REST mãi phải fallback DB.
+
+### Debug nhanh
+
+```bash
+docker exec -it chat-redis redis-cli HGETALL chat:unread:10
+docker exec -it chat-redis redis-cli ZRANGE chat:unread:active 0 -1 WITHSCORES
+docker exec -it chat-redis redis-cli TTL chat:unread:10
+```

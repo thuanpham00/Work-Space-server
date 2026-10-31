@@ -19,6 +19,7 @@ import { generateUniqueInviteCode } from '~/utils/utils'
 import { envConfig } from '~/utils/config'
 import type { Prisma } from '~/generated/prisma/client'
 import { invalidateChannelMembers } from './redis.services'
+import { getUnreadCountForUser } from './unread.services'
 
 class ChannelService {
   async createChannel({ categoryId, name, description, type, isPrivate, isDefault }: CreateChannelBody) {
@@ -556,7 +557,6 @@ class ChannelService {
         readChannelStateMap.set(key, readChannelState)
       }
     }
-
     // Lấy message MỚI NHẤT của mỗi channel.
     // Dùng groupBy thay vì findMany không giới hạn (findMany sẽ tải TOÀN BỘ
     // message của mọi channel vào RAM chỉ để lấy 1 message/channel).
@@ -585,18 +585,11 @@ class ChannelService {
         const lastMessageState = lastMessageMap.get(key)
         const findChannel = channelList.find((c) => c.channelId === channelId)
 
-        // Công thức count PHẢI khớp với socket (src/services/unread.services.ts):
-        // id > lastReadMessageId (không dùng createdAt > lastReadAt vì timestamp
-        // có thể trùng ms → thiếu message, và không đồng bộ với realtime).
-        const count = await databaseServices.prisma.message.count({
-          where: {
-            channelId: channelId,
-            messageType: { not: 'CONFIG' },
-            id: {
-              gt: readChannelState?.lastReadMessageId ?? BigInt(0)
-            }
-          }
-        })
+        const count = await getUnreadCountForUser(
+          Number(channelId),
+          Number(userId),
+          readChannelState?.lastReadMessageId ?? null
+        )
 
         return {
           workspaceId: findChannel?.channel.workspaceId?.toString() ?? null,
