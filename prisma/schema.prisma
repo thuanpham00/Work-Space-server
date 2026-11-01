@@ -88,6 +88,19 @@ enum ChannelInviteStatus {
   @@map("workspace_invite_status")
 }
 
+enum NotificationType {
+  CHANNEL_INVITED          @map("channel_invited")
+  CHANNEL_INVITE_REVOKED   @map("channel_invite_revoked")
+  CHANNEL_REQUEST_APPROVED @map("channel_request_approved")
+  CHANNEL_REQUEST_REJECTED @map("channel_request_rejected")
+  FRIEND_REQUEST           @map("friend_request")
+  FRIEND_REQUEST_ACCEPTED  @map("friend_request_accepted")
+  MENTION                  @map("mention")
+  SYSTEM                   @map("system")
+
+  @@map("notification_type")
+}
+
 model User {
   id          BigInt   @id @default(autoincrement()) // kiểu dữ liệu prisma - khóa chính - mặc định tự động tăng - kiểu trong db mysql
   email       String   @unique @db.VarChar(255)
@@ -127,6 +140,10 @@ model User {
   // Channel invite link
   channelInvitesCreated ChannelInvite[] @relation("ChannelInviteCreator")
   channelInvitesRevoked ChannelInvite[] @relation("ChannelInviteRevoker")
+
+  // Notification relations
+  notifications      Notification[] @relation("NotificationUser")
+  actedNotifications Notification[] @relation("NotificationActor")
 
   @@map("users") // Đổi tên bảng
 }
@@ -267,6 +284,7 @@ model Channel {
   pinnedMessages PinnedMessage[]
   nicknames      ChannelMemberNickname[]
   invites        ChannelInvite[]
+  notifications  Notification[]
 
   @@index([workspaceId])
   @@index([categoryId])
@@ -291,6 +309,31 @@ model ChannelMember {
   @@index([channelId, status])
   @@index([invitedById])
   @@map("channel_members")
+}
+
+model Notification {
+  id          BigInt           @id @default(autoincrement())
+  userId      BigInt           @map("user_id")
+  type        NotificationType @map("type")
+  title       String           @db.VarChar(255)
+  body        String?          @db.Text
+  actorId     BigInt?          @map("actor_id")
+  channelId   BigInt?          @map("channel_id")
+  workspaceId BigInt?          @map("workspace_id")
+  metadata    Json?
+  isRead      Boolean          @default(false) @map("is_read")
+  readAt      DateTime?        @map("read_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  user    User     @relation("NotificationUser", fields: [userId], references: [id], onDelete: Cascade, map: "notifications_user_id_fkey")
+  actor   User?    @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull, map: "notifications_actor_id_fkey")
+  channel Channel? @relation(fields: [channelId], references: [id], onDelete: Cascade, map: "notifications_channel_id_fkey")
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@index([userId, type])
+  @@index([isRead, createdAt])
+  @@map("notifications")
 }
 
 model Message {

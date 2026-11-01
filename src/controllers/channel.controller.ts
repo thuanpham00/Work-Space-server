@@ -19,6 +19,14 @@ import { Attachment } from '~/models/responses/attachment.response'
 import { InviteLinkData } from '~/models/responses/workspace.response'
 import { FriendToInviteChannel } from '~/models/responses/friend.responses'
 import { InviteUserBody } from '~/models/schemas/user.schemas'
+import {
+  notifyChannelInviteAccepted,
+  notifyChannelInviteRejected,
+  notifyChannelInviteRevoked,
+  notifyChannelInvited,
+  notifyChannelJoinApproved,
+  notifyChannelJoinRejected
+} from '~/services/channel.events'
 
 export const uploadFileMessageController = async (req: AuthenticatedRequest, res: Response) => {
   const uploadedFile = getUploadedFile(req, 'file')
@@ -372,10 +380,17 @@ export const cancelJoinRequestController = async (req: AuthenticatedRequest, res
 
 export const inviteUserToChannelController = async (req: AuthenticatedRequest, res: Response) => {
   const { channelId } = req.params as { channelId: string }
-  const { user_id } = req.decode_authorization as TokenPayload
-  const { userId } = req.body as InviteUserBody
+  const { user_id } = req.decode_authorization as TokenPayload // người mời
+  const { userId } = req.body as InviteUserBody // người được mời
 
   const result = await channelServices.inviteUserToChannel(BigInt(channelId), BigInt(userId), BigInt(user_id))
+
+  // Báo user được mời (nhóm 1) → toast + gỡ trạng thái "chờ" ở client.
+  await notifyChannelInvited({
+    channelId: BigInt(channelId),
+    userId: BigInt(userId),
+    invitedById: BigInt(user_id)
+  })
 
   const response: ApiResponse<{
     channelId: string
@@ -397,6 +412,13 @@ export const revokeInviteController = async (req: AuthenticatedRequest, res: Res
 
   const result = await channelServices.revokeInvite(BigInt(channelId), BigInt(userId), BigInt(user_id))
 
+  // Báo user bị thu hồi lời mời (nhóm 1).
+  await notifyChannelInviteRevoked({
+    channelId: BigInt(channelId),
+    userId: BigInt(userId),
+    revokedById: BigInt(user_id)
+  })
+
   const response: ApiResponse<{
     channelId: string
     userId: string
@@ -416,6 +438,12 @@ export const acceptInviteController = async (req: AuthenticatedRequest, res: Res
 
   const result = await channelServices.acceptInvite(BigInt(channelId), BigInt(user_id))
 
+  // Báo các tab/thiết bị khác của user + refresh sidebar (workspaceMember đổi).
+  await notifyChannelInviteAccepted({
+    channelId: BigInt(channelId),
+    userId: BigInt(user_id)
+  })
+
   const response: ApiResponse<{
     channelId: string
     userId: string
@@ -433,6 +461,12 @@ export const rejectInviteController = async (req: AuthenticatedRequest, res: Res
   const { user_id } = req.decode_authorization as TokenPayload
 
   const result = await channelServices.rejectInvite(BigInt(channelId), BigInt(user_id))
+
+  // Báo các tab/thiết bị khác của user + refresh sidebar.
+  await notifyChannelInviteRejected({
+    channelId: BigInt(channelId),
+    userId: BigInt(user_id)
+  })
 
   const response: ApiResponse<{
     channelId: string
@@ -452,6 +486,13 @@ export const approveJoinRequestController = async (req: AuthenticatedRequest, re
 
   const result = await channelServices.approveJoinRequest(BigInt(channelId), BigInt(userId), BigInt(adminId))
 
+  // Báo user được duyệt (nhóm 1) + sidebar refresh.
+  await notifyChannelJoinApproved({
+    channelId: BigInt(channelId),
+    userId: BigInt(userId),
+    approvedById: BigInt(adminId)
+  })
+
   const response: ApiResponse<{
     channelId: string
     userId: string
@@ -469,6 +510,13 @@ export const rejectJoinRequestController = async (req: AuthenticatedRequest, res
   const { user_id: adminId } = req.decode_authorization as TokenPayload
 
   const result = await channelServices.rejectJoinRequest(BigInt(channelId), BigInt(userId), BigInt(adminId))
+
+  // Báo user bị từ chối (nhóm 1) + sidebar refresh.
+  await notifyChannelJoinRejected({
+    channelId: BigInt(channelId),
+    userId: BigInt(userId),
+    rejectedById: BigInt(adminId)
+  })
 
   const response: ApiResponse<{
     channelId: string

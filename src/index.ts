@@ -14,6 +14,7 @@ import workspaceRoutes from '~/routes/workspace.routes'
 import channelInviteRoutes from '~/routes/channelInvite.routes'
 import socketRoutes from '~/routes/socket.routes'
 import searchRoutes from '~/routes/search.routes'
+import notificationRoutes from '~/routes/notification.routes'
 import { errorHandler } from '~/middlewares/errorHandler.middlewares'
 import { initialSocket } from '~/socket/socket'
 import { closeRedisAdapter } from '~/socket/redis.adapter'
@@ -67,6 +68,7 @@ app.use('/channel-invites', channelInviteRoutes)
 app.use('/workspaces', workspaceRoutes)
 app.use('/socket', socketRoutes)
 app.use('/search', searchRoutes)
+app.use('/notifications', notificationRoutes)
 app.use(errorHandler)
 
 databaseServices.connect().then(async () => {
