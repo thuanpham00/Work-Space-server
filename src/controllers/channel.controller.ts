@@ -66,8 +66,8 @@ export const updateChannelSettingsController = async (req: AuthenticatedRequest,
 
   io?.to(Socket_Room.channel(channelId.toString())).emit('channel_settings_updated', {
     channelId
-  })
-  io?.to(Socket_Room.channel(channelId.toString())).emit('receive_message', configMessage)
+  }) // cập nhật cấu hình channel
+  io?.to(Socket_Room.channel(channelId.toString())).emit('receive_message', configMessage) // cập nhật tin nhắn
 
   res.json({
     message: 'Cập nhật cấu hình channel thành công',
@@ -90,8 +90,8 @@ export const updateChannelNicknameController = async (req: AuthenticatedRequest,
 
   io?.to(Socket_Room.channel(channelId.toString())).emit('channel_nicknames_updated', {
     channelId
-  })
-  io?.to(Socket_Room.channel(channelId.toString())).emit('receive_message', configMessage)
+  }) // cập nhật nickname channel
+  io?.to(Socket_Room.channel(channelId.toString())).emit('receive_message', configMessage) // cập nhật tin nhắn
 
   res.json({
     message: 'Cập nhật nickname channel thành công',
