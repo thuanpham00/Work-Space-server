@@ -160,6 +160,19 @@ class NotificationService {
 
     return result.count
   }
+
+  async deleteChannelInviteNotifications(userId: bigint, channelId: bigint): Promise<number> {
+    try {
+      const result = await databaseServices.prisma.notification.deleteMany({
+        where: { userId, channelId, type: NotificationType.CHANNEL_INVITED }
+      })
+
+      return result.count
+    } catch (err) {
+      console.error('[notification.services] deleteChannelInviteNotifications thất bại:', err)
+      return 0
+    }
+  }
 }
 
 export default new NotificationService()

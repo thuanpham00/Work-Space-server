@@ -26,17 +26,6 @@ export const listNotificationsController = async (req: AuthenticatedRequest, res
   res.json(response)
 }
 
-export const getUnreadCountController = async (req: AuthenticatedRequest, res: Response) => {
-  const { user_id } = req.decode_authorization as TokenPayload
-
-  const unreadCount = await notificationServices.countUnread(BigInt(user_id))
-
-  res.json({
-    message: 'Lấy số lượng thông báo chưa đọc thành công',
-    data: { unreadCount }
-  })
-}
-
 export const markNotificationAsReadController = async (req: AuthenticatedRequest, res: Response) => {
   const { user_id } = req.decode_authorization as TokenPayload
   const { id } = req.params as { id: string }
@@ -48,6 +37,7 @@ export const markNotificationAsReadController = async (req: AuthenticatedRequest
   // Đồng bộ tab/thiết bị khác của cùng user
   emitToUser(user_id, 'notification_read', {
     notificationId: notification.id,
+    readAt: notification.readAt,
     unreadCount
   })
 

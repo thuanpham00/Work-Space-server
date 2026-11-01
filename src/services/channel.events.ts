@@ -120,10 +120,6 @@ const pushNotification = async (params: {
 
   if (!notification) return null
 
-  const unreadCount = await notificationServices.countUnread(params.userId)
-  // cập nhật badge unread và notification
-  emitToUser(params.userId, 'notification_created', { notification, unreadCount })
-
   return notification
 }
 
@@ -178,15 +174,7 @@ export const notifyChannelInviteRevoked = async (params: {
   try {
     const [ctx, revoker] = await Promise.all([getChannelContext(params.channelId), getUserBrief(params.revokedById)])
 
-    await pushNotification({
-      userId: params.userId,
-      type: NotificationType.CHANNEL_INVITE_REVOKED,
-      title: `Lời mời vào ${ctx.channelName ?? 'kênh chat'} đã bị thu hồi`,
-      body: `${revoker.name} đã thu hồi lời mời của bạn`,
-      actorId: params.revokedById,
-      channelId: params.channelId,
-      workspaceId: ctx.workspaceId ? BigInt(ctx.workspaceId) : null
-    })
+    await notificationServices.deleteChannelInviteNotifications(params.userId, params.channelId)
 
     emitToUser(params.userId, 'channel_invite_revoked', {
       ...ctx,

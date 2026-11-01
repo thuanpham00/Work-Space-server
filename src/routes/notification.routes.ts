@@ -1,6 +1,5 @@
 import { Router } from 'express'
 import {
-  getUnreadCountController,
   listNotificationsController,
   markAllNotificationsAsReadController,
   markNotificationAsReadController
@@ -13,9 +12,6 @@ const router = Router()
 
 // Danh sách thông báo (phân trang + filter)
 router.get('/', accessTokenValidator, validateQuery(notificationQuerySchema), asyncHandler(listNotificationsController))
-
-// Badge unread
-router.get('/unread-count', accessTokenValidator, asyncHandler(getUnreadCountController))
 
 // Đánh dấu toàn bộ đã đọc
 router.patch('/read-all', accessTokenValidator, asyncHandler(markAllNotificationsAsReadController))
