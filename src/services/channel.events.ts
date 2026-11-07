@@ -211,7 +211,7 @@ export const notifyChannelInviteAccepted = async (params: { channelId: bigint; u
 
     await pushNotification({
       userId: params.userId,
-      type: NotificationType.CHANNEL_REQUEST_APPROVED,
+      type: NotificationType.CHANNEL_INVITE_ACCEPTED,
       title: `Bạn đã được thêm vào kênh ${ctx.channelName ?? 'kênh chat'}`,
       body: `Bạn đã được thêm vào kênh ${ctx.channelName ?? 'kênh chat'}`,
       actorId: params.userId,
