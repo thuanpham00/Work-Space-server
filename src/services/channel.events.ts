@@ -4,11 +4,13 @@ import notificationServices from '~/services/notification.services'
 import type { NotificationResponse } from '~/models/responses/notification.response'
 import { getIO } from '~/socket/socket-instance'
 import { Socket_Room } from '~/socket/utils'
+import { ChannelInviteStatus } from '~/models/responses/channel.response'
 
 export interface ChannelEventBase {
   channelId: string
   channelName: string | null
   workspaceId: string | null
+  inviteToken: string | null
 }
 
 export interface ChannelInvitedPayload extends ChannelEventBase {
@@ -72,14 +74,22 @@ export const emitToUser = (userId: bigint | string, event: string, payload: unkn
 /** Lấy name/workspaceId của channel để client hiển thị toast + invalidate đúng scope */
 const getChannelContext = async (channelId: bigint): Promise<ChannelEventBase> => {
   const channel = await databaseServices.prisma.channel.findUnique({
-    where: { id: channelId },
-    select: { id: true, name: true, workspaceId: true }
+    where: {
+      id: channelId,
+      invites: {
+        some: {
+          status: ChannelInviteStatus.ACTIVE
+        }
+      }
+    },
+    select: { id: true, name: true, workspaceId: true, invites: true }
   })
 
   return {
     channelId: channel?.id.toString() ?? channelId.toString(),
     channelName: channel?.name ?? null,
-    workspaceId: channel?.workspaceId ? channel.workspaceId.toString() : null
+    workspaceId: channel?.workspaceId ? channel.workspaceId.toString() : null,
+    inviteToken: channel?.invites[0]?.code ?? null
   }
 }
 
@@ -145,7 +155,7 @@ export const notifyChannelInvited = async (params: {
       actorId: params.invitedById,
       channelId: params.channelId,
       workspaceId: ctx.workspaceId ? BigInt(ctx.workspaceId) : null,
-      metadata: { invitedById: params.invitedById.toString() }
+      metadata: { invitedById: params.invitedById.toString(), inviteToken: ctx.inviteToken }
     })
 
     // 2. Event realtime cũ (giữ lại để client invalidate cache)
@@ -199,6 +209,16 @@ export const notifyChannelInviteAccepted = async (params: { channelId: bigint; u
   try {
     const ctx = await getChannelContext(params.channelId)
 
+    await pushNotification({
+      userId: params.userId,
+      type: NotificationType.CHANNEL_REQUEST_APPROVED,
+      title: `Bạn đã được thêm vào kênh ${ctx.channelName ?? 'kênh chat'}`,
+      body: `Bạn đã được thêm vào kênh ${ctx.channelName ?? 'kênh chat'}`,
+      actorId: params.userId,
+      channelId: params.channelId,
+      workspaceId: ctx.workspaceId ? BigInt(ctx.workspaceId) : null
+    })
+
     emitToUser(params.userId, 'channel_invite_resolved', {
       ...ctx,
       type: 'invite',
@@ -206,14 +226,6 @@ export const notifyChannelInviteAccepted = async (params: { channelId: bigint; u
       action: 'accepted',
       actorId: params.userId.toString()
     })
-
-    if (ctx.workspaceId) {
-      emitToUser(params.userId, 'workspace_updated', {
-        workspaceId: ctx.workspaceId,
-        channelId: ctx.channelId,
-        reason: 'joined'
-      })
-    }
   } catch (err) {
     console.error('[channel.events] notifyChannelInviteAccepted thất bại:', err)
   }
@@ -233,14 +245,6 @@ export const notifyChannelInviteRejected = async (params: { channelId: bigint; u
       action: 'rejected',
       actorId: params.userId.toString()
     })
-
-    if (ctx.workspaceId) {
-      emitToUser(params.userId, 'workspace_updated', {
-        workspaceId: ctx.workspaceId,
-        channelId: ctx.channelId,
-        reason: 'left'
-      })
-    }
   } catch (err) {
     console.error('[channel.events] notifyChannelInviteRejected thất bại:', err)
   }
