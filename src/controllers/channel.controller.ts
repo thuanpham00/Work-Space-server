@@ -25,7 +25,9 @@ import {
   notifyChannelInviteRevoked,
   notifyChannelInvited,
   notifyChannelJoinApproved,
-  notifyChannelJoinRejected
+  notifyChannelJoinRejected,
+  notifyChannelRequestCancelled,
+  notifyChannelRequestSent
 } from '~/services/channel.events'
 
 export const uploadFileMessageController = async (req: AuthenticatedRequest, res: Response) => {
@@ -348,6 +350,12 @@ export const requestJoinChannelController = async (req: AuthenticatedRequest, re
 
   const result = await channelServices.requestJoinChannel(BigInt(channelId), BigInt(user_id))
 
+  // Báo chính user đó (đồng bộ các tab/thiết bị khác) + tạo notification "đã gửi yêu cầu".
+  await notifyChannelRequestSent({
+    channelId: BigInt(channelId),
+    userId: BigInt(user_id)
+  })
+
   const response: ApiResponse<{
     channelId: string
     userId: string
@@ -365,6 +373,12 @@ export const cancelJoinRequestController = async (req: AuthenticatedRequest, res
   const { user_id } = req.decode_authorization as TokenPayload
 
   const result = await channelServices.cancelJoinRequest(BigInt(channelId), BigInt(user_id))
+
+  // Báo chính user đó (đồng bộ các tab/thiết bị khác) + xoá notification "đã gửi yêu cầu".
+  await notifyChannelRequestCancelled({
+    channelId: BigInt(channelId),
+    userId: BigInt(user_id)
+  })
 
   const response: ApiResponse<{
     channelId: string

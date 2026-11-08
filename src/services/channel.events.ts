@@ -43,6 +43,22 @@ export interface ChannelInviteResolvedPayload extends ChannelEventBase {
   actorId: string
 }
 
+/** User vừa gửi yêu cầu tham gia channel (đồng bộ các tab/thiết bị khác) */
+export interface ChannelRequestSentPayload extends ChannelEventBase {
+  type: 'join'
+  status: 'PENDING_REQUEST'
+  action: 'requested'
+  actorId: string
+}
+
+/** User vừa hủy yêu cầu tham gia channel (đồng bộ các tab/thiết bị khác) */
+export interface ChannelRequestCancelledPayload extends ChannelEventBase {
+  type: 'join'
+  status: 'CANCELED'
+  action: 'cancelled'
+  actorId: string
+}
+
 /** Membership trong workspace thay đổi → sidebar cần refresh */
 export interface WorkspaceUpdatedPayload {
   workspaceId: string
@@ -71,25 +87,23 @@ export const emitToUser = (userId: bigint | string, event: string, payload: unkn
   }
 }
 
-/** Lấy name/workspaceId của channel để client hiển thị toast + invalidate đúng scope */
 const getChannelContext = async (channelId: bigint): Promise<ChannelEventBase> => {
-  const channel = await databaseServices.prisma.channel.findUnique({
-    where: {
-      id: channelId,
-      invites: {
-        some: {
-          status: ChannelInviteStatus.ACTIVE
-        }
-      }
-    },
-    select: { id: true, name: true, workspaceId: true, invites: true }
-  })
+  const [channel, activeInvite] = await Promise.all([
+    databaseServices.prisma.channel.findUnique({
+      where: { id: channelId },
+      select: { id: true, name: true, workspaceId: true }
+    }),
+    databaseServices.prisma.channelInvite.findFirst({
+      where: { channelId, status: ChannelInviteStatus.ACTIVE },
+      select: { code: true }
+    })
+  ])
 
   return {
     channelId: channel?.id.toString() ?? channelId.toString(),
     channelName: channel?.name ?? null,
     workspaceId: channel?.workspaceId ? channel.workspaceId.toString() : null,
-    inviteToken: channel?.invites[0]?.code ?? null
+    inviteToken: activeInvite?.code ?? null
   }
 }
 
@@ -216,7 +230,8 @@ export const notifyChannelInviteAccepted = async (params: { channelId: bigint; u
       body: `Bạn đã được thêm vào kênh ${ctx.channelName ?? 'kênh chat'}`,
       actorId: params.userId,
       channelId: params.channelId,
-      workspaceId: ctx.workspaceId ? BigInt(ctx.workspaceId) : null
+      workspaceId: ctx.workspaceId ? BigInt(ctx.workspaceId) : null,
+      metadata: { inviteToken: ctx.inviteToken }
     })
 
     emitToUser(params.userId, 'channel_invite_resolved', {
@@ -251,6 +266,70 @@ export const notifyChannelInviteRejected = async (params: { channelId: bigint; u
 }
 
 /**
+ * Flow: User gửi yêu cầu tham gia channel (PENDING_REQUEST).
+ *
+ * → Gửi cho CHÍNH user này để các TAB/THIẾT BỊ KHÁC của cùng user đồng bộ
+ *   (tab khác có thể đang hiển thị nút "Tham gia" cũ → bấm lại sẽ lỗi
+ *   "Bạn đã gửi yêu cầu tham gia channel này trước đó").
+ *   Client sẽ tự bỏ qua toast nếu actor là chính mình.
+ * → Notification cho chính B: "Bạn đã gửi yêu cầu tham gia kênh X".
+ *   (Phần thông báo cho ADMIN — người duyệt — sẽ bổ sung sau.)
+ */
+export const notifyChannelRequestSent = async (params: { channelId: bigint; userId: bigint }): Promise<void> => {
+  try {
+    const ctx = await getChannelContext(params.channelId)
+
+    await pushNotification({
+      userId: params.userId,
+      type: NotificationType.CHANNEL_REQUEST_SENT,
+      title: `Bạn đã gửi yêu cầu tham gia ${ctx.channelName ?? 'kênh chat'}`,
+      body: `Yêu cầu tham gia ${ctx.channelName ?? 'kênh chat'} của bạn đã được gửi đi`,
+      actorId: params.userId,
+      channelId: params.channelId,
+      workspaceId: ctx.workspaceId ? BigInt(ctx.workspaceId) : null,
+      metadata: { requestedById: params.userId.toString(), inviteToken: ctx.inviteToken }
+    })
+
+    emitToUser(params.userId, 'channel_request_sent', {
+      ...ctx,
+      type: 'join',
+      status: 'PENDING_REQUEST',
+      action: 'requested',
+      actorId: params.userId.toString()
+    })
+  } catch (err) {
+    console.error('[channel.events] notifyChannelRequestSent thất bại:', err)
+  }
+}
+
+/**
+ * Flow: User hủy yêu cầu tham gia channel (PENDING_REQUEST → CANCELED).
+ *
+ * → Xoá notification "đã gửi yêu cầu" vì đây là hành động B TỰ đảo ngược
+ *   lại hành động của chính mình, và KHÔNG có notification kết quả nào đi kèm.
+ *   Giữ lại sẽ khiến B thấy "đã gửi yêu cầu" trong khi đã hủy → sai trạng thái.
+ *   (Tương tự notifyChannelInviteRevoked → xoá notification CHANNEL_INVITED.)
+ * → Đồng bộ các tab/thiết bị khác của cùng user (nút "Hủy yêu cầu" → "Tham gia").
+ */
+export const notifyChannelRequestCancelled = async (params: { channelId: bigint; userId: bigint }): Promise<void> => {
+  try {
+    const ctx = await getChannelContext(params.channelId)
+
+    await notificationServices.deleteChannelRequestSentNotifications(params.userId, params.channelId)
+
+    emitToUser(params.userId, 'channel_request_cancelled', {
+      ...ctx,
+      type: 'join',
+      status: 'CANCELED',
+      action: 'cancelled',
+      actorId: params.userId.toString()
+    })
+  } catch (err) {
+    console.error('[channel.events] notifyChannelRequestCancelled thất bại:', err)
+  }
+}
+
+/**
  * Flow: Admin duyệt yêu cầu tham gia (PENDING_REQUEST → ACTIVE).
  *
  * → User gửi yêu cầu nhận toast "Yêu cầu của bạn đã được duyệt" +
@@ -271,7 +350,8 @@ export const notifyChannelJoinApproved = async (params: {
       body: `${approver.name} đã duyệt yêu cầu tham gia của bạn`,
       actorId: params.approvedById,
       channelId: params.channelId,
-      workspaceId: ctx.workspaceId ? BigInt(ctx.workspaceId) : null
+      workspaceId: ctx.workspaceId ? BigInt(ctx.workspaceId) : null,
+      metadata: { inviteToken: ctx.inviteToken }
     })
 
     emitToUser(params.userId, 'channel_request_resolved', {
@@ -317,7 +397,8 @@ export const notifyChannelJoinRejected = async (params: {
       body: `${rejecter.name} đã từ chối yêu cầu tham gia của bạn`,
       actorId: params.rejectedById,
       channelId: params.channelId,
-      workspaceId: ctx.workspaceId ? BigInt(ctx.workspaceId) : null
+      workspaceId: ctx.workspaceId ? BigInt(ctx.workspaceId) : null,
+      metadata: { inviteToken: ctx.inviteToken }
     })
 
     emitToUser(params.userId, 'channel_request_resolved', {

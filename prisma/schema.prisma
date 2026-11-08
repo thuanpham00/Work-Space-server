@@ -94,6 +94,7 @@ enum NotificationType {
   CHANNEL_INVITE_ACCEPTED  @map("channel_invite_accepted")
   CHANNEL_REQUEST_APPROVED @map("channel_request_approved")
   CHANNEL_REQUEST_REJECTED @map("channel_request_rejected")
+  CHANNEL_REQUEST_SENT    @map("channel_request_sent")
   FRIEND_REQUEST           @map("friend_request")
   FRIEND_REQUEST_ACCEPTED  @map("friend_request_accepted")
   MENTION                  @map("mention")
