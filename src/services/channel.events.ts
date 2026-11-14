@@ -35,12 +35,23 @@ export interface ChannelRequestResolvedPayload extends ChannelEventBase {
   resolvedByName: string
 }
 
-/** Lời mời được chính user đó accept / reject */
+/** Lời mời được chính user đó accept / reject (đồng bộ tab khác của B) */
 export interface ChannelInviteResolvedPayload extends ChannelEventBase {
   type: 'invite'
   status: 'ACTIVE' | 'LEFT'
   action: 'accepted' | 'rejected'
   actorId: string
+  actorName: string | null
+}
+
+/** Socket chung báo cho ADMIN khi B accept / reject lời mời (tương tự channel_request_withdrawn) */
+export interface ChannelInviteWithdrawnPayload extends ChannelEventBase {
+  type: 'invite'
+  status: 'ACTIVE' | 'LEFT'
+  action: 'accepted' | 'rejected'
+  /** B — người accept / reject */
+  actorId: string
+  actorName: string | null
 }
 
 /** User vừa gửi yêu cầu tham gia channel (đồng bộ các tab/thiết bị khác) */
@@ -126,6 +137,24 @@ export const getChannelAdminIds = async (channelId: bigint, excludeUserId?: bigi
 export const emitToChannelAdmins = (adminIds: bigint[], payload: unknown): void => {
   for (const adminId of adminIds) {
     emitToUser(adminId, 'channel_request_withdrawn', payload)
+  }
+}
+
+/**
+ * Bắn socket `channel_invite_withdrawn` tới toàn bộ admin trong `adminIds`.
+ *
+ * Event riêng cho phía A khi B accept / reject lời mời (tương tự
+ * `channel_request_withdrawn` của flow join-request):
+ * - accepted → A toast "B đã tham gia" + refresh `ChannelRequestList` /
+ *   `channelDetail` + `notificationList`.
+ * - rejected → A toast "B đã từ chối" + refresh `ChannelRequestList` /
+ *   `notificationList`.
+ * Tách khỏi `channel_invite_resolved` (chỉ đồng bộ tab khác của chính B)
+ * để client không phải check actorId mỗi lần nhận.
+ */
+export const emitToInviteAdmins = (adminIds: bigint[], payload: unknown): void => {
+  for (const adminId of adminIds) {
+    emitToUser(adminId, 'channel_invite_withdrawn', payload)
   }
 }
 
@@ -256,13 +285,23 @@ export const notifyChannelInviteRevoked = async (params: {
 /**
  * Flow: User accept lời mời (PENDING_INVITE → ACTIVE).
  *
- * → Gửi cho CHÍNH user này để các TAB/THIẾT BỊ KHÁC của cùng user đồng bộ
- *   (tab khác có thể đang hiển thị trạng thái "đang được mời" cũ).
- *   Client sẽ tự bỏ qua toast nếu actor là chính mình.
+ * → B (người accept): xoá notification CHANNEL_INVITED cũ (tránh kẹt 2 dòng
+ *   INVITED + ACCEPTED) + nhận notification ACCEPTED + socket
+ *   `channel_invite_resolved` để đồng bộ các TAB/THIẾT BỊ KHÁC của chính B
+ *   (tab khác đang hiển thị trạng thái "đang được mời" cũ).
+ * → A (toàn bộ ADMIN ACTIVE, trừ B): nhận notification "B đã tham gia kênh X"
+ *   (type CHANNEL_INVITE_ACCEPTED, actorId = B) + socket riêng
+ *   `channel_invite_withdrawn` (action = 'accepted') để refresh
+ *   `ChannelRequestList` + `channelDetail` + toast. Tách khỏi
+ *   `channel_invite_resolved` của B để client không phải check actorId.
  */
 export const notifyChannelInviteAccepted = async (params: { channelId: bigint; userId: bigint }): Promise<void> => {
   try {
-    const ctx = await getChannelContext(params.channelId)
+    const [ctx, acceptor] = await Promise.all([getChannelContext(params.channelId), getUserBrief(params.userId)])
+
+    // Xoá "Bạn được mời vào kênh..." của B — invite đã xong, giữ lại sẽ kẹt
+    // 2 dòng INVITED + ACCEPTED (rác + sai trạng thái "đang được mời").
+    await notificationServices.deleteChannelInviteNotifications(params.userId, params.channelId)
 
     await pushNotification({
       userId: params.userId,
@@ -275,13 +314,37 @@ export const notifyChannelInviteAccepted = async (params: { channelId: bigint; u
       metadata: { inviteToken: ctx.inviteToken }
     })
 
-    emitToUser(params.userId, 'channel_invite_resolved', {
+    const resolvedPayload = {
       ...ctx,
       type: 'invite',
       status: 'ACTIVE',
       action: 'accepted',
-      actorId: params.userId.toString()
-    })
+      actorId: params.userId.toString(),
+      actorName: acceptor.name
+    }
+
+    emitToUser(params.userId, 'channel_invite_resolved', resolvedPayload)
+
+    // ---- Báo cho A (toàn bộ ADMIN ACTIVE của channel, trừ chính B) ----
+    const adminIds = await getChannelAdminIds(params.channelId, params.userId)
+    if (adminIds.length === 0) return
+
+    await Promise.all(
+      adminIds.map((adminId) =>
+        pushNotification({
+          userId: adminId,
+          type: NotificationType.CHANNEL_INVITE_ACCEPTED,
+          title: `${acceptor.name} đã tham gia ${ctx.channelName ?? 'kênh chat'}`,
+          body: `${acceptor.name} đã chấp nhận lời mời vào ${ctx.channelName ?? 'kênh chat'}`,
+          actorId: params.userId,
+          channelId: params.channelId,
+          workspaceId: ctx.workspaceId ? BigInt(ctx.workspaceId) : null,
+          metadata: { inviteToken: ctx.inviteToken }
+        })
+      )
+    )
+
+    emitToInviteAdmins(adminIds, resolvedPayload)
   } catch (err) {
     console.error('[channel.events] notifyChannelInviteAccepted thất bại:', err)
   }
@@ -289,18 +352,54 @@ export const notifyChannelInviteAccepted = async (params: { channelId: bigint; u
 
 /**
  * Flow: User từ chối lời mời (PENDING_INVITE → LEFT).
+ *
+ * → B (người từ chối): xoá notification CHANNEL_INVITED cũ + socket
+ *   `channel_invite_resolved` để đồng bộ các tab/thiết bị khác của chính B.
+ * → A (toàn bộ ADMIN ACTIVE, trừ B): nhận notification "B đã từ chối lời mời
+ *   vào kênh X" (tái dùng type CHANNEL_INVITE_REVOKED để khỏi thêm
+ *   enum/migration — ngữ nghĩa chung là "invite không còn hiệu lực",
+ *   actorId = B) + socket riêng `channel_invite_withdrawn` (action = 'rejected')
+ *   để refresh `ChannelRequestList` + toast. Tách khỏi
+ *   `channel_invite_resolved` của B để client không phải check actorId.
  */
 export const notifyChannelInviteRejected = async (params: { channelId: bigint; userId: bigint }): Promise<void> => {
   try {
-    const ctx = await getChannelContext(params.channelId)
+    const [ctx, rejector] = await Promise.all([getChannelContext(params.channelId), getUserBrief(params.userId)])
 
-    emitToUser(params.userId, 'channel_invite_resolved', {
+    // Xoá "Bạn được mời vào kênh..." của B — invite đã đóng (LEFT).
+    await notificationServices.deleteChannelInviteNotifications(params.userId, params.channelId)
+
+    const resolvedPayload = {
       ...ctx,
       type: 'invite',
       status: 'LEFT',
       action: 'rejected',
-      actorId: params.userId.toString()
-    })
+      actorId: params.userId.toString(),
+      actorName: rejector.name
+    }
+
+    emitToUser(params.userId, 'channel_invite_resolved', resolvedPayload)
+
+    // ---- Báo cho A (toàn bộ ADMIN ACTIVE của channel, trừ chính B) ----
+    const adminIds = await getChannelAdminIds(params.channelId, params.userId)
+    if (adminIds.length === 0) return
+
+    await Promise.all(
+      adminIds.map((adminId) =>
+        pushNotification({
+          userId: adminId,
+          type: NotificationType.CHANNEL_INVITE_REVOKED,
+          title: `${rejector.name} đã từ chối lời mời vào ${ctx.channelName ?? 'kênh chat'}`,
+          body: `${rejector.name} đã từ chối lời mời vào ${ctx.channelName ?? 'kênh chat'}`,
+          actorId: params.userId,
+          channelId: params.channelId,
+          workspaceId: ctx.workspaceId ? BigInt(ctx.workspaceId) : null,
+          metadata: { inviteToken: ctx.inviteToken }
+        })
+      )
+    )
+
+    emitToInviteAdmins(adminIds, resolvedPayload)
   } catch (err) {
     console.error('[channel.events] notifyChannelInviteRejected thất bại:', err)
   }
