@@ -192,6 +192,38 @@ class NotificationService {
       return 0
     }
   }
+
+  /**
+   * Xoá notification "B xin vào kênh X" ở phía ADMIN khi B hủy yêu cầu.
+   *
+   * Notification của A được tạo ở `notifyChannelRequestSent` với:
+   * userId = adminId, channelId, type = CHANNEL_REQUEST_SENT, actorId = B.
+   * Nếu không xoá, A vẫn thấy "B xin tham gia" trong khi B đã rút → sai trạng thái,
+   * bấm Duyệt sẽ lỗi "không có yêu cầu tham gia".
+   */
+  async deleteChannelRequestReceivedNotifications(
+    adminIds: bigint[],
+    channelId: bigint,
+    requesterId: bigint
+  ): Promise<number> {
+    if (adminIds.length === 0) return 0
+
+    try {
+      const result = await databaseServices.prisma.notification.deleteMany({
+        where: {
+          userId: { in: adminIds },
+          channelId,
+          type: NotificationType.CHANNEL_REQUEST_SENT,
+          actorId: requesterId
+        }
+      })
+
+      return result.count
+    } catch (err) {
+      console.error('[notification.services] deleteChannelRequestReceivedNotifications thất bại:', err)
+      return 0
+    }
+  }
 }
 
 export default new NotificationService()

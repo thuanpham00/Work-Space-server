@@ -1,5 +1,5 @@
 import databaseServices from '~/services/database.services'
-import { NotificationType } from '~/constants/enum'
+import { ChannelMemberRole, MemberStatus, NotificationType } from '~/constants/enum'
 import notificationServices from '~/services/notification.services'
 import type { NotificationResponse } from '~/models/responses/notification.response'
 import { getIO } from '~/socket/socket-instance'
@@ -51,6 +51,18 @@ export interface ChannelRequestSentPayload extends ChannelEventBase {
   actorId: string
 }
 
+/** Socket chung báo cho ADMIN về mọi biến động join-request của B (gộp received cũ vào đây) */
+export interface ChannelRequestWithdrawnPayload extends ChannelEventBase {
+  type: 'join'
+  status: 'PENDING_REQUEST' | 'CANCELED' | 'ACTIVE' | 'LEFT'
+  action: 'requested' | 'cancelled' | 'approved' | 'rejected'
+  /** B — người gửi / hủy / được duyệt / bị từ chối */
+  actorId: string
+  requesterId: string
+  requesterName: string | null
+  requesterAvatar?: string | null
+}
+
 /** User vừa hủy yêu cầu tham gia channel (đồng bộ các tab/thiết bị khác) */
 export interface ChannelRequestCancelledPayload extends ChannelEventBase {
   type: 'join'
@@ -84,6 +96,36 @@ export const emitToUser = (userId: bigint | string, event: string, payload: unkn
     io.to(Socket_Room.user(userId.toString())).emit(event, payload)
   } catch (err) {
     console.error(`[channel.events] emit "${event}" tới user ${userId} thất bại:`, err)
+  }
+}
+
+/**
+ * Lấy toàn bộ ADMIN ACTIVE của channel (trừ `excludeUserId` nếu có).
+ *
+ * Dùng chung cho mọi flow join-request cần báo cho A:
+ * sent / cancelled / approved / rejected.
+ */
+export const getChannelAdminIds = async (channelId: bigint, excludeUserId?: bigint | null): Promise<bigint[]> => {
+  const admins = await databaseServices.prisma.channelMember.findMany({
+    where: { channelId, role: ChannelMemberRole.ADMIN, status: MemberStatus.ACTIVE },
+    select: { userId: true }
+  })
+
+  return admins.map((a) => a.userId).filter((id) => (excludeUserId != null ? id !== excludeUserId : true))
+}
+
+/**
+ * Bắn socket `channel_request_withdrawn` tới toàn bộ admin trong `adminIds`.
+ *
+ * Event chung duy nhất cho mọi biến động join-request của B phía A:
+ * - requested  → B mới xin vào (A toast + refresh list duyệt)
+ * - cancelled / approved / rejected → gỡ B khỏi `ChannelRequestList`
+ *   + refresh `notificationList`.
+ * Nhận `payload` làm tham số, event cố định để khỏi phân tán handler client.
+ */
+export const emitToChannelAdmins = (adminIds: bigint[], payload: unknown): void => {
+  for (const adminId of adminIds) {
+    emitToUser(adminId, 'channel_request_withdrawn', payload)
   }
 }
 
@@ -217,7 +259,6 @@ export const notifyChannelInviteRevoked = async (params: {
  * → Gửi cho CHÍNH user này để các TAB/THIẾT BỊ KHÁC của cùng user đồng bộ
  *   (tab khác có thể đang hiển thị trạng thái "đang được mời" cũ).
  *   Client sẽ tự bỏ qua toast nếu actor là chính mình.
- * → workspace_updated: membership workspace đổi → sidebar cần refresh.
  */
 export const notifyChannelInviteAccepted = async (params: { channelId: bigint; userId: bigint }): Promise<void> => {
   try {
@@ -268,16 +309,17 @@ export const notifyChannelInviteRejected = async (params: { channelId: bigint; u
 /**
  * Flow: User gửi yêu cầu tham gia channel (PENDING_REQUEST).
  *
- * → Gửi cho CHÍNH user này để các TAB/THIẾT BỊ KHÁC của cùng user đồng bộ
- *   (tab khác có thể đang hiển thị nút "Tham gia" cũ → bấm lại sẽ lỗi
+ * → B (người gửi): nhận notification "Bạn đã gửi yêu cầu..." + socket
+ *   `channel_request_sent` để đồng bộ các TAB/THIẾT BỊ KHÁC của chính B
+ *   (tab khác đang hiển thị nút "Tham gia" cũ → bấm lại sẽ lỗi
  *   "Bạn đã gửi yêu cầu tham gia channel này trước đó").
- *   Client sẽ tự bỏ qua toast nếu actor là chính mình.
- * → Notification cho chính B: "Bạn đã gửi yêu cầu tham gia kênh X".
- *   (Phần thông báo cho ADMIN — người duyệt — sẽ bổ sung sau.)
+ * → A (ADMIN của channel): nhận notification "B xin vào kênh X" + socket
+ *   `channel_request_withdrawn` (action = 'requested') để refresh
+ *   `ChannelRequestList` + toast.
  */
 export const notifyChannelRequestSent = async (params: { channelId: bigint; userId: bigint }): Promise<void> => {
   try {
-    const ctx = await getChannelContext(params.channelId)
+    const [ctx, requester] = await Promise.all([getChannelContext(params.channelId), getUserBrief(params.userId)])
 
     await pushNotification({
       userId: params.userId,
@@ -297,6 +339,36 @@ export const notifyChannelRequestSent = async (params: { channelId: bigint; user
       action: 'requested',
       actorId: params.userId.toString()
     })
+
+    // ---- Báo cho A (toàn bộ ADMIN ACTIVE của channel, trừ chính B) ----
+    const adminIds = await getChannelAdminIds(params.channelId, params.userId)
+    if (adminIds.length === 0) return
+
+    await Promise.all(
+      adminIds.map((adminId) =>
+        pushNotification({
+          userId: adminId,
+          type: NotificationType.CHANNEL_REQUEST_SENT,
+          title: `${requester.name} xin tham gia ${ctx.channelName ?? 'kênh chat'}`,
+          body: `${requester.name} vừa gửi yêu cầu tham gia ${ctx.channelName ?? 'kênh chat'}`,
+          actorId: params.userId,
+          channelId: params.channelId,
+          workspaceId: ctx.workspaceId ? BigInt(ctx.workspaceId) : null,
+          metadata: { requestedById: params.userId.toString(), inviteToken: ctx.inviteToken }
+        })
+      )
+    )
+
+    emitToChannelAdmins(adminIds, {
+      ...ctx,
+      type: 'join',
+      status: 'PENDING_REQUEST',
+      action: 'requested',
+      actorId: params.userId.toString(),
+      requesterId: requester.id,
+      requesterName: requester.name,
+      requesterAvatar: requester.avatar
+    })
   } catch (err) {
     console.error('[channel.events] notifyChannelRequestSent thất bại:', err)
   }
@@ -305,15 +377,19 @@ export const notifyChannelRequestSent = async (params: { channelId: bigint; user
 /**
  * Flow: User hủy yêu cầu tham gia channel (PENDING_REQUEST → CANCELED).
  *
- * → Xoá notification "đã gửi yêu cầu" vì đây là hành động B TỰ đảo ngược
- *   lại hành động của chính mình, và KHÔNG có notification kết quả nào đi kèm.
- *   Giữ lại sẽ khiến B thấy "đã gửi yêu cầu" trong khi đã hủy → sai trạng thái.
+ * → B (người hủy): xoá notification "đã gửi yêu cầu" của chính B + socket
+ *   `channel_request_cancelled` để đồng bộ các tab/thiết bị khác của B
+ *   (nút "Hủy yêu cầu" → "Tham gia"). Giữ lại sẽ khiến B thấy
+ *   "đang chờ được duyệt" trong khi đã hủy → sai trạng thái.
  *   (Tương tự notifyChannelInviteRevoked → xoá notification CHANNEL_INVITED.)
- * → Đồng bộ các tab/thiết bị khác của cùng user (nút "Hủy yêu cầu" → "Tham gia").
+ * → A (ADMIN của channel): xoá notification "B xin vào kênh X" + socket
+ *   `channel_request_withdrawn` để refresh `ChannelRequestList` (gỡ B khỏi
+ *   list duyệt). Nếu không xoá, A vẫn thấy "B xin tham gia" trong khi B đã
+ *   rút → bấm Duyệt sẽ lỗi "không có yêu cầu tham gia".
  */
 export const notifyChannelRequestCancelled = async (params: { channelId: bigint; userId: bigint }): Promise<void> => {
   try {
-    const ctx = await getChannelContext(params.channelId)
+    const [ctx, requester] = await Promise.all([getChannelContext(params.channelId), getUserBrief(params.userId)])
 
     await notificationServices.deleteChannelRequestSentNotifications(params.userId, params.channelId)
 
@@ -324,6 +400,22 @@ export const notifyChannelRequestCancelled = async (params: { channelId: bigint;
       action: 'cancelled',
       actorId: params.userId.toString()
     })
+
+    // ---- Gỡ ở phía A (toàn bộ ADMIN ACTIVE của channel, trừ chính B) ----
+    const adminIds = await getChannelAdminIds(params.channelId, params.userId)
+    if (adminIds.length === 0) return
+
+    await notificationServices.deleteChannelRequestReceivedNotifications(adminIds, params.channelId, params.userId)
+
+    emitToChannelAdmins(adminIds, {
+      ...ctx,
+      type: 'join',
+      status: 'CANCELED',
+      action: 'cancelled',
+      actorId: params.userId.toString(),
+      requesterId: requester.id,
+      requesterName: requester.name
+    })
   } catch (err) {
     console.error('[channel.events] notifyChannelRequestCancelled thất bại:', err)
   }
@@ -332,8 +424,12 @@ export const notifyChannelRequestCancelled = async (params: { channelId: bigint;
 /**
  * Flow: Admin duyệt yêu cầu tham gia (PENDING_REQUEST → ACTIVE).
  *
- * → User gửi yêu cầu nhận toast "Yêu cầu của bạn đã được duyệt" +
- *   workspace_updated để sidebar thêm channel mới.
+ * → B (người xin): nhận notification + socket `channel_request_resolved`
+ *   (toast "đã được duyệt" + refresh sidebar).
+ * → A (toàn bộ ADMIN, gồm cả tab khác của chính người duyệt): xoá
+ *   notification "B xin vào" + socket `channel_request_withdrawn` để gỡ B
+ *   khỏi `ChannelRequestList`. Tái dùng event withdrawn sẵn có nên client A
+ *   không cần thêm handler mới.
  */
 export const notifyChannelJoinApproved = async (params: {
   channelId: bigint
@@ -341,7 +437,16 @@ export const notifyChannelJoinApproved = async (params: {
   approvedById: bigint
 }): Promise<void> => {
   try {
-    const [ctx, approver] = await Promise.all([getChannelContext(params.channelId), getUserBrief(params.approvedById)])
+    const [ctx, approver, requester] = await Promise.all([
+      getChannelContext(params.channelId),
+      getUserBrief(params.approvedById),
+      getUserBrief(params.userId)
+    ])
+
+    // Xoá "Bạn đã gửi yêu cầu..." của B — request đã xong, giữ lại sẽ khiến
+    // chuông B tồn 2 dòng SENT + APPROVED cho cùng 1 channel (rác + sai trạng
+    // thái "đang chờ" trong khi đã ACTIVE). Chỉ giữ lại dòng kết quả bên dưới.
+    await notificationServices.deleteChannelRequestSentNotifications(params.userId, params.channelId)
 
     await pushNotification({
       userId: params.userId,
@@ -363,14 +468,21 @@ export const notifyChannelJoinApproved = async (params: {
       resolvedByName: approver.name
     })
 
-    // Membership workspace đổi (PENDING_REQUEST → ACTIVE) → sidebar cần refresh.
-    if (ctx.workspaceId) {
-      emitToUser(params.userId, 'workspace_updated', {
-        workspaceId: ctx.workspaceId,
-        channelId: ctx.channelId,
-        reason: 'joined'
-      })
-    }
+    // ---- Đồng bộ phía A: request đã xong → gỡ khỏi list duyệt của mọi admin ----
+    const adminIds = await getChannelAdminIds(params.channelId)
+    if (adminIds.length === 0) return
+
+    await notificationServices.deleteChannelRequestReceivedNotifications(adminIds, params.channelId, params.userId)
+
+    emitToChannelAdmins(adminIds, {
+      ...ctx,
+      type: 'join',
+      status: 'ACTIVE',
+      action: 'approved',
+      actorId: params.userId.toString(),
+      requesterId: requester.id,
+      requesterName: requester.name
+    })
   } catch (err) {
     console.error('[channel.events] notifyChannelJoinApproved thất bại:', err)
   }
@@ -379,8 +491,10 @@ export const notifyChannelJoinApproved = async (params: {
 /**
  * Flow: Admin từ chối yêu cầu tham gia (PENDING_REQUEST → LEFT).
  *
- * → User gửi yêu cầu nhận toast "Yêu cầu của bạn đã bị từ chối" +
- *   workspace_updated để sidebar gỡ channel.
+ * → B (người xin): nhận notification + socket `channel_request_resolved`
+ *   (toast "bị từ chối").
+ * → A (toàn bộ ADMIN): xoá notification "B xin vào" + socket
+ *   `channel_request_withdrawn` để gỡ B khỏi `ChannelRequestList`.
  */
 export const notifyChannelJoinRejected = async (params: {
   channelId: bigint
@@ -388,7 +502,15 @@ export const notifyChannelJoinRejected = async (params: {
   rejectedById: bigint
 }): Promise<void> => {
   try {
-    const [ctx, rejecter] = await Promise.all([getChannelContext(params.channelId), getUserBrief(params.rejectedById)])
+    const [ctx, rejecter, requester] = await Promise.all([
+      getChannelContext(params.channelId),
+      getUserBrief(params.rejectedById),
+      getUserBrief(params.userId)
+    ])
+
+    // Xoá "Bạn đã gửi yêu cầu..." của B — request đã xong (bị từ chối), giữ
+    // lại sẽ khiến chuông B tồn 2 dòng SENT + REJECTED (rác + sai trạng thái).
+    await notificationServices.deleteChannelRequestSentNotifications(params.userId, params.channelId)
 
     await pushNotification({
       userId: params.userId,
@@ -410,13 +532,21 @@ export const notifyChannelJoinRejected = async (params: {
       resolvedByName: rejecter.name
     })
 
-    if (ctx.workspaceId) {
-      emitToUser(params.userId, 'workspace_updated', {
-        workspaceId: ctx.workspaceId,
-        channelId: ctx.channelId,
-        reason: 'left'
-      })
-    }
+    // ---- Đồng bộ phía A: request đã xong → gỡ khỏi list duyệt của mọi admin ----
+    const adminIds = await getChannelAdminIds(params.channelId)
+    if (adminIds.length === 0) return
+
+    await notificationServices.deleteChannelRequestReceivedNotifications(adminIds, params.channelId, params.userId)
+
+    emitToChannelAdmins(adminIds, {
+      ...ctx,
+      type: 'join',
+      status: 'LEFT',
+      action: 'rejected',
+      actorId: params.userId.toString(),
+      requesterId: requester.id,
+      requesterName: requester.name
+    })
   } catch (err) {
     console.error('[channel.events] notifyChannelJoinRejected thất bại:', err)
   }

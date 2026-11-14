@@ -1,5 +1,5 @@
 import { Server, Socket } from 'socket.io'
-import { MemberStatus, MessageType } from '~/constants/enum'
+import { ChannelType, MemberStatus, MessageType } from '~/constants/enum'
 import { Media } from '~/models/responses/media.response'
 import databaseServices from '~/services/database.services'
 import userServices from '~/services/user.services'
@@ -226,6 +226,20 @@ const incrementUnreadForChannel = async (
   await markChannelActive(channelId)
 }
 
+// Preview sidebar DM — bắn tới room `user:{id}` của mọi member (gồm cả sender),
+// chỉ áp dụng cho channel DM. Không filter đang mở hay không, client tự upsert theo id.
+const emitReceiveMessageGlobal = async (io: Server, channelId: number, channelType: ChannelType, payload: unknown) => {
+  if (channelType !== ChannelType.DM) return
+
+  const messageType = (payload as { messageType?: MessageType })?.messageType
+  if (messageType === MessageType.CONFIG) return
+
+  const members = await getChannelMemberIds(channelId.toString())
+  for (const m of members) {
+    io.to(Socket_Room.user(String(m))).emit('receive_message_global', payload)
+  }
+}
+
 export const handleSendMessage = async (
   io: Server,
   params: {
@@ -298,6 +312,8 @@ export const handleSendMessage = async (
   const workspaceId = await getChannelWorkspaceId(channelId.toString())
   const channelType = await getChannelType(channelId.toString())
   if (channelType === null) return
+
+  await emitReceiveMessageGlobal(io, channelId, channelType, response)
 
   enqueueUnread({
     channelId,
@@ -372,6 +388,8 @@ export const handleSendGif = async (
 
   const channelType = await getChannelType(channelId.toString())
   if (channelType === null) return
+
+  await emitReceiveMessageGlobal(io, channelId, channelType, { ...res, content: 'Đã gửi một GIF' })
 
   enqueueUnread({
     channelId,

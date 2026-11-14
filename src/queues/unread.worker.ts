@@ -172,3 +172,4 @@ export const startUnreadWorker = () => {
 }
 
 // chạy mỗi khi có job từ queue vào thì worker sẽ lấy job ra thực thi
+// Nhiều tin nhắn trong 1 giây gom thành 1 job, xử lý 1 lần, emit badge 1 lần cho mỗi người — thay vì mỗi tin nhắn bắn 1 event.
