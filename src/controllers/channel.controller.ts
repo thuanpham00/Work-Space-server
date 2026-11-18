@@ -28,7 +28,7 @@ import {
   notifyChannelJoinRejected,
   notifyChannelRequestCancelled,
   notifyChannelRequestSent
-} from '~/services/channel.events'
+} from '~/socket/events/channel.events'
 
 export const uploadFileMessageController = async (req: AuthenticatedRequest, res: Response) => {
   const uploadedFile = getUploadedFile(req, 'file')

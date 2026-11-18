@@ -1,7 +1,7 @@
 # Note — Redis Commands đang sử dụng trong dự án
 
-> Cập nhật: Phase 7 (List — Aggregator buffer) + Hash (Unread Counter)
-> Tổng cộng: **20 lệnh** + **1 stream**
+> Cập nhật: Phase 7 (List — Aggregator buffer) + Hash (Unread Counter) + JSON (User Brief)
+> Tổng cộng: **22 lệnh** + **1 stream**
 
 ---
 
@@ -29,6 +29,8 @@
 | 18  | `HMGET`            | Hash         | `unread.services.ts`                              | Đọc N field trong 1 round trip            |
 | 19  | `HGETALL`          | Hash         | `unread.services.ts`                              | Đọc toàn bộ field của hash                |
 | 20  | `HDEL`             | Hash         | `unread.services.ts`                              | Xóa 1 field (không xóa cả key)            |
+| 21  | `GET` (JSON)       | JSON/String  | `redis.services.ts:206`                           | Đọc cache user brief (object serialize)    |
+| 22  | `SET ... EX` (JSON)| JSON/String  | `redis.services.ts:224`                           | Ghi cache user brief (object + TTL)        |
 | -   | `SCAN` (stream)    | Generic      | `presence.services.ts:53`                         | Duyệt tất cả key `presence:user:*`        |
 
 ---
@@ -267,7 +269,79 @@ const counts = await redis.hmget(unreadKey(channelId), ...userIds.map(String))
 
 ---
 
-### 6️⃣ Key-level (áp dụng cho mọi kiểu)
+### 6️⃣ JSON (object — chuỗi JSON)
+
+Redis **không có kiểu JSON native**. "JSON" trong Redis thực chất là **String** chứa text JSON, serialize bằng `JSON.stringify` và parse bằng `JSON.parse`.
+
+| Lệnh    | Cú pháp                             | Ví dụ                                                    |
+| ------- | ----------------------------------- | -------------------------------------------------------- |
+| `SET`   | `SET key value [EX seconds]`        | `SET user:10:brief '{"id":"10","name":"John"}' EX 600`  |
+| `GET`   | `GET key`                           | `GET user:10:brief` → `'{"id":"10","name":"John"}'`      |
+| `DEL`   | `DEL key`                           | `DEL user:10:brief`                                     |
+
+**Cấu trúc key hiện tại (user brief):**
+
+```
+Key:    chat:user:10:brief
+Type:   String (chứa JSON)
+Value:  {
+           "id": "10",
+           "name": "John Doe",
+           "avatar": "https://example.com/avatar.png"
+         }
+```
+
+#### Đặc điểm & đánh đổi
+
+| Đặc điểm                   | Chi tiết                                                                       |
+| -------------------------- | ------------------------------------------------------------------------------ |
+| **Schema linh hoạt**       | ✅ Thêm/bớt field không cần `HSET` — chỉ cần đổi interface TypeScript         |
+| **Đọc/ghi 1 lệnh**        | ✅ 1 RTT cho cả object — nhanh hơn Hash nếu luôn đọc hết field                |
+| **Truy cập 1 field**       | ❌ Phải `GET` rồi `JSON.parse` — không có `HGET` từng phần                    |
+| **Ghi 1 field**            | ❌ Phải `GET` → sửa → `SET` lại (không atomic như `HSET`)                     |
+| **Tìm theo điều kiện**     | ❌ Redis không hiểu JSON — phải `JSON.parse` rồi lọc ở app                    |
+| **BigInt**                 | ⚠️ `JSON.stringify` **throw** với BigInt — phải `.toString()` trước           |
+
+#### Tại sao JSON (String) mà không phải Hash?
+
+| Lệnh cần làm                          | JSON (String)                | Hash                          |
+| -------------------------------------- | ---------------------------- | ----------------------------- |
+| `GET` rồi `JSON.parse` (đọc hết)     | ✅ 1 RTT                     | ✅ 1 RTT (`HGETALL`)           |
+| Đọc 1 field                          | ❌ parse cả object           | ✅ O(1) `HGET`                |
+| Ghi 1 field                          | ❌ đọc→sửa→ghi (race)        | ✅ atomic `HSET`              |
+| Object có field động (thêm/bớt)      | ✅ linh hoạt, không đổi key  | ✅ linh hoạt                  |
+| Payload có mảng lồng nhau            | ✅ thoải mái                 | ❌ phải `JSON.stringify` field |
+
+→ Chọn **JSON** khi object **luôn được đọc trọn vẹn** và **không cần update 1 field** (cache read-mostly).
+→ Chọn **Hash** khi cần `HINCRBY` / `HSET` từng field độc lập (VD: unread counter).
+
+#### Quy tắc khi dùng JSON trong code
+
+```typescript
+// 1. Đọc cache
+const cached = await redis.get(key)
+if (cached !== null) {
+  return JSON.parse(cached) as UserBrief
+}
+
+// 2. Query DB → dựng object (BigInt phải .toString())
+const brief: UserBrief = {
+  id: user.id.toString(), // ⚠️ BigInt không stringify được
+  name: user.displayName || user.username || 'Người dùng',
+  avatar: user.avatar ?? null
+}
+
+// 3. Ghi cache (set + expire atomic)
+await redis.set(key, JSON.stringify(brief), 'EX', USER_BRIEF_TTL)
+```
+
+> ⚠️ **Cache poisoning / parse lỗi:** luôn bọc `JSON.parse` trong `try/catch` khi đọc cache — data có thể bị hỏng (deploy sai shape, flush không đúng cách) → nên fallback về query DB thay vì crash.
+
+> ⚠️ **Schema drift:** đổi shape object mà không đổi version key → cache cũ còn lại sẽ `JSON.parse` ra object thiếu field. Nên **bump version trong key** khi đổi shape: `user:10:brief:v2`.
+
+---
+
+### 7️⃣ Key-level (áp dụng cho mọi kiểu)
 
 | Lệnh     | Cú pháp                                     | Ví dụ                               |
 | -------- | ------------------------------------------- | ----------------------------------- |
@@ -291,6 +365,7 @@ const counts = await redis.hmget(unreadKey(channelId), ...userIds.map(String))
 | Sorted Set       | Cache danh sách có thứ tự / cần score để TTL (VD: presence)                     |
 | List             | Queue / buffer FIFO — thêm xóa ở 2 đầu (VD: unread buffer)                      |
 | Hash             | Object có nhiều field, cần đọc/ghi từng field + tăng counter (VD: unread count) |
+| JSON (String)    | Object luôn đọc trọn vẹn, không update từng field (VD: user brief cache)      |
 | EXPIRE           | Cleanup key sau X giây không hoạt động                                          |
 | ZREMRANGEBYSCORE | Cleanup member cũ trong sorted set                                              |
 | LTRIM            | Giới hạn độ dài List buffer (chống tràn)                                        |
@@ -305,6 +380,7 @@ const counts = await redis.hmget(unreadKey(channelId), ...userIds.map(String))
 | Cần thứ tự theo score / timestamp | Sorted Set | `ZADD` / `ZRANGE`       |
 | FIFO, thêm-xóa ở 2 đầu, buffer    | List       | `LPUSH` / `BRPOP`       |
 | Lấy field cụ thể trong 1 object   | Hash       | `HSET` / `HGETALL`      |
+| Object đọc trọn vẹn, shape động  | JSON       | `SET` / `GET` + `JSON`  |
 | Broadcast 1-n, không cần lưu      | Pub/Sub    | `PUBLISH` / `SUBSCRIBE` |
 | Event stream có replay            | Stream     | `XADD` / `XREAD`        |
 
@@ -362,6 +438,11 @@ Mỗi key trong Redis có **3 thuộc tính**:
 │  chat:unread:10                  │
 │  Value: { "15": "3", "20": "0" } │  ← field → value, đọc/ghi từng field
 └───────────────────────────────────┘
+
+┌─ JSON (String) ───────────────────┐
+│  chat:user:10:brief              │
+│  Value: '{"id":"10","name":"..."}'│  ← chuỗi JSON, đọc trọn vẹn 1 lần
+└───────────────────────────────────┘
 ```
 
 ---
@@ -388,6 +469,7 @@ Hai kiểu này **khác nhau**, không thay thế nhau.
 | Phase 7 (List)     | `LPUSH`, `LRANGE`, `LTRIM`, `LLEN`                           |
 | Phase 8-9 (Hash)   | `HSET`, `HGET`, `HINCRBY`, `HMGET`, `HGETALL`, `HDEL`        |
 | Unread P3-5        | `ZRANGEBYSCORE`, `ZREMRANGEBYSCORE` (ZSET `unread:active`)   |
+| Cache User Brief   | `GET` + `SET EX` (JSON — object serialize trong 1 String)   |
 
 ---
 

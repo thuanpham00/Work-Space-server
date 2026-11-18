@@ -2,7 +2,7 @@ import { Response } from 'express'
 import { AuthenticatedRequest } from '~/models/requests/user.requests'
 import { ApiResponse, TokenPayload } from '~/models/responses/user.responses'
 import type { NotificationListResponse } from '~/models/responses/notification.response'
-import { emitToUser } from '~/services/channel.events'
+import { emitToUser } from '~/socket/events/utils.events'
 import notificationServices from '~/services/notification.services'
 
 export const listNotificationsController = async (req: AuthenticatedRequest, res: Response) => {

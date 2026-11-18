@@ -247,7 +247,20 @@ class ChannelService {
         }
       },
       select: {
-        status: true
+        status: true,
+        role: true
+      }
+    })
+
+    const workspaceMember = await databaseServices.prisma.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId: channel?.workspaceId ?? BigInt(0),
+          userId: userId ?? BigInt(0)
+        }
+      },
+      select: {
+        role: true
       }
     })
 
@@ -265,6 +278,8 @@ class ChannelService {
         createdAt: channel?.createdAt.toISOString(),
         updatedAt: channel?.updatedAt.toISOString(),
         channelStatus: channelMember ? (channelMember.status as string) : null,
+        channelRole: channelMember?.role ?? null,
+        workspaceRole: workspaceMember?.role ?? null,
         workspaceOwner: channel?.workspace?.owner
           ? {
               id: channel.workspace.owner.id.toString(),

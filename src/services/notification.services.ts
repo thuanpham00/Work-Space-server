@@ -174,12 +174,6 @@ class NotificationService {
     }
   }
 
-  /**
-   * Xoá notification "đã gửi yêu cầu tham gia" khi user hủy yêu cầu.
-   *
-   * Bắt buộc phải xoá vì notification còn nằm trong DB sẽ hiển thị sai
-   * trạng thái ("đang chờ được duyệt") trong khi user đã hủy yêu cầu.
-   */
   async deleteChannelRequestSentNotifications(userId: bigint, channelId: bigint): Promise<number> {
     try {
       const result = await databaseServices.prisma.notification.deleteMany({
@@ -193,14 +187,6 @@ class NotificationService {
     }
   }
 
-  /**
-   * Xoá notification "B xin vào kênh X" ở phía ADMIN khi B hủy yêu cầu.
-   *
-   * Notification của A được tạo ở `notifyChannelRequestSent` với:
-   * userId = adminId, channelId, type = CHANNEL_REQUEST_SENT, actorId = B.
-   * Nếu không xoá, A vẫn thấy "B xin tham gia" trong khi B đã rút → sai trạng thái,
-   * bấm Duyệt sẽ lỗi "không có yêu cầu tham gia".
-   */
   async deleteChannelRequestReceivedNotifications(
     adminIds: bigint[],
     channelId: bigint,
@@ -221,6 +207,23 @@ class NotificationService {
       return result.count
     } catch (err) {
       console.error('[notification.services] deleteChannelRequestReceivedNotifications thất bại:', err)
+      return 0
+    }
+  }
+
+  async deleteFriendRequestNotifications(userId: bigint, actorId: bigint): Promise<number> {
+    try {
+      const result = await databaseServices.prisma.notification.deleteMany({
+        where: {
+          userId,
+          actorId,
+          type: NotificationType.FRIEND_REQUEST
+        }
+      })
+
+      return result.count
+    } catch (err) {
+      console.error('[notification.services] deleteFriendRequestNotifications thất bại:', err)
       return 0
     }
   }

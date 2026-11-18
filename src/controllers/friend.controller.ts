@@ -5,6 +5,12 @@ import { AuthenticatedRequest } from '~/models/requests/user.requests'
 import { FriendDMChannelResponse, FriendResponse, FriendStatusCountResponse } from '~/models/responses/friend.responses'
 import { ApiResponse, TokenPayload } from '~/models/responses/user.responses'
 import friendServices from '~/services/friend.services'
+import {
+  emitToAcceptFriend,
+  emitToAddFriend,
+  emitToCancelFriendRequest,
+  emitToRejectFriend
+} from '~/socket/events/friend.event'
 
 // lấy ds bạn bè dựa trên trạng thái (chờ xác nhận, đã gửi yêu cầu kb cho user, tất cả) dựa trên token của user hiện tại
 export const getAllFriendsController = async (req: AuthenticatedRequest, res: Response) => {
@@ -65,10 +71,23 @@ export const addFriendController = async (req: AuthenticatedRequest, res: Respon
     })
   }
 
-  await friendServices.addFriend(BigInt(user_id), BigInt(friendId))
+  const isCreated = await friendServices.addFriend(BigInt(user_id), BigInt(friendId))
+
+  if (isCreated) {
+    // Gửi mới → B nhận notification + socket, A nhận socket xác nhận.
+    await emitToAddFriend(BigInt(user_id), BigInt(friendId))
+
+    res.json({
+      message: 'Yêu cầu kết bạn đã được gửi thành công'
+    })
+    return
+  }
+
+  // Đã gửi trước đó → hủy lời mời + xoá notification lời mời ở phía A.
+  await emitToCancelFriendRequest(BigInt(user_id), BigInt(friendId))
 
   res.json({
-    message: 'Yêu cầu kết bạn đã được gửi thành công'
+    message: 'Đã hủy yêu cầu kết bạn thành công'
   })
 }
 
@@ -84,6 +103,8 @@ export const acceptFriendController = async (req: AuthenticatedRequest, res: Res
   }
 
   await friendServices.acceptFriend(BigInt(user_id), BigInt(friendId))
+
+  await emitToAcceptFriend(BigInt(user_id), BigInt(friendId))
 
   res.json({
     message: 'Đồng ý kết bạn thành công'
@@ -102,6 +123,8 @@ export const rejectFriendController = async (req: AuthenticatedRequest, res: Res
   }
 
   await friendServices.rejectFriend(BigInt(user_id), BigInt(friendId))
+
+  await emitToRejectFriend(BigInt(user_id), BigInt(friendId))
 
   res.json({
     message: 'Từ chối kết bạn thành công'

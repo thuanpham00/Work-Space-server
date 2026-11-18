@@ -17,6 +17,18 @@ Cả ngày:  ~100 query DB cho 1 user
 → Giảm 5,000 lần query. DB thở phào.
  */
 
+export interface UserBrief {
+  id: string
+  name: string
+  avatar: string | null
+}
+
+const MEMBER_TTL = 300 // 5 phút - key tự expire sau 5 phút
+const WORKSPACE_TTL = 600 // 10 phút - workspace ít thay đổi
+const LATEST_MESSAGE_TTL = 300 // 5 phút - message mới nhất thay đổi liên tục khi có tin
+const USER_BRIEF_TTL = 600 // 10 phút - thông tin hiển thị ít thay đổi
+const NO_WORKSPACE = '__none__'
+
 // ============ KẾT NỐI REDIS ============
 export const redis = new Redis(envConfig.redis_url, {
   keyPrefix: REDIS_KEY_PREFIX // mọi key tự có prefix "chat:"
@@ -24,11 +36,6 @@ export const redis = new Redis(envConfig.redis_url, {
 
 redis.on('connect', () => console.log('[Redis] connected'))
 redis.on('error', (err) => console.error('[Redis] error:', err.message))
-
-const MEMBER_TTL = 300 // 5 phút - key tự expire sau 5 phút
-const WORKSPACE_TTL = 600 // 10 phút - workspace ít thay đổi
-const LATEST_MESSAGE_TTL = 300 // 5 phút - message mới nhất thay đổi liên tục khi có tin
-const NO_WORKSPACE = '__none__'
 
 /**
  * Lấy danh sách userId là member của channel.
@@ -179,4 +186,40 @@ export const invalidateChannelMembers = async (channelId: bigint | string | numb
  */
 export const invalidateChannelWorkspace = (channelId: number): Promise<number> => {
   return redis.del(`channel:${channelId}:workspace`)
+}
+
+/**
+ * 
+ *  Key:    user:10:brief
+    Type:   JSON
+    Value:  {
+      id: "10",
+      name: "John Doe",
+      avatar: "https://example.com/avatar.png"
+    }
+ */
+
+export const getUserBrief = async (userId: bigint) => {
+  const key = `user:${userId.toString()}:brief`
+
+  // 1. Thử cache trước
+  const cached = await redis.get(key)
+  if (cached !== null) {
+    return JSON.parse(cached) as UserBrief
+  }
+
+  // 2. Cache miss → query DB
+  const user = await databaseServices.prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, displayName: true, fullName: true, username: true, avatar: true }
+  })
+
+  const brief: UserBrief = {
+    id: user?.id.toString() ?? userId.toString(),
+    name: user?.displayName || user?.username || 'Người dùng',
+    avatar: user?.avatar ?? null
+  }
+
+  await redis.set(key, JSON.stringify(brief), 'EX', USER_BRIEF_TTL)
+  return brief
 }

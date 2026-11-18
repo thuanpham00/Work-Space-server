@@ -283,7 +283,7 @@ class FriendService {
           id: existing.id
         }
       })
-      return
+      return false
     }
     await databaseServices.prisma.friend.create({
       data: {
@@ -292,6 +292,8 @@ class FriendService {
         status: FriendStatus.PENDING
       }
     })
+
+    return true
   }
 
   async acceptFriend(userId: bigint, friendId: bigint) {
